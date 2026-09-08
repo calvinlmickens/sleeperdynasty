@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dynasty-sleeper"
+version = "0.1.0"
+description = "Lightweight Sleeper league-state ingestion and reconciliation for the Dynasty Fantasy Football Advisor"
+requires-python = ">=3.10"
+dependencies = ["requests>=2.31", "pandas>=2.0"]
+
+[project.scripts]
+dynasty-refresh = "dynasty_sleeper.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["dynasty_sleeper*"]
