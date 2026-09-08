@@ -14,6 +14,7 @@ class LeagueConfig:
     playoff_start_week: int = 15
     playoff_teams: int = 6
     rookie_draft_rounds: int = 3
+    target_team_name: str = "RuffRyders Reloaded"
 
 
 DEFAULT_CONFIG = LeagueConfig()

@@ -46,7 +46,6 @@ def reconcile_snapshot(
         starters = [str(x) for x in (r.get("starters") or []) if x is not None and str(x) != "0"]
         if len(players) != config.expected_roster_size:
             roster_size_failures.append((rid, len(players)))
-        # During migration, allow explicit empty starter placeholders; otherwise require 11 IDs.
         if len(starters) > config.expected_starters:
             starter_failures.append((rid, len(starters)))
         missing = [p for p in starters if p not in players]
@@ -76,9 +75,64 @@ def critical_failures(report: pd.DataFrame) -> list[str]:
 
 def roster_delta(previous: pd.DataFrame, current: pd.DataFrame) -> pd.DataFrame:
     """Return ownership changes by sleeper_player_id for reconciliation against transactions."""
+    cols = ["sleeper_player_id", "previous_roster_id", "current_roster_id"]
     if previous.empty or current.empty:
-        return pd.DataFrame(columns=["sleeper_player_id", "previous_roster_id", "current_roster_id"])
+        return pd.DataFrame(columns=cols)
     p = previous[["sleeper_player_id", "roster_id"]].drop_duplicates().rename(columns={"roster_id": "previous_roster_id"})
     c = current[["sleeper_player_id", "roster_id"]].drop_duplicates().rename(columns={"roster_id": "current_roster_id"})
     merged = p.merge(c, on="sleeper_player_id", how="outer")
-    return merged[merged["previous_roster_id"] != merged["current_roster_id"]].reset_index(drop=True)
+    changed = merged[
+        merged["previous_roster_id"].fillna(-999999).astype(float)
+        != merged["current_roster_id"].fillna(-999999).astype(float)
+    ].copy()
+    return changed.reset_index(drop=True)
+
+
+def reconcile_roster_delta(previous: pd.DataFrame, current: pd.DataFrame, transactions: pd.DataFrame) -> pd.DataFrame:
+    """Explain observed ownership changes with completed Sleeper transactions.
+
+    For a move A -> B, a matching DROP from A and ADD to B are expected when present in
+    Sleeper's transaction representation. For rostered -> free agent, DROP is sufficient;
+    for free agent -> rostered, ADD is sufficient.
+    """
+    delta = roster_delta(previous, current)
+    columns = [
+        "sleeper_player_id", "previous_roster_id", "current_roster_id",
+        "expected_drop_found", "expected_add_found", "status", "detail",
+    ]
+    if delta.empty:
+        return pd.DataFrame(columns=columns)
+
+    tx = transactions.copy()
+    if tx.empty:
+        tx = pd.DataFrame(columns=["player_id", "action", "roster_id", "status"])
+    if "status" in tx.columns:
+        complete = tx[tx["status"].astype(str).str.lower().isin(["complete", "completed"])].copy()
+        if not complete.empty:
+            tx = complete
+
+    rows = []
+    for _, d in delta.iterrows():
+        pid = str(d["sleeper_player_id"])
+        prev_rid = None if pd.isna(d["previous_roster_id"]) else int(d["previous_roster_id"])
+        curr_rid = None if pd.isna(d["current_roster_id"]) else int(d["current_roster_id"])
+        player_tx = tx[tx.get("player_id", pd.Series(dtype=str)).astype(str) == pid] if not tx.empty else tx
+
+        drop_found = prev_rid is None
+        add_found = curr_rid is None
+        if prev_rid is not None and not player_tx.empty:
+            drop_found = bool(((player_tx["action"] == "DROP") & (pd.to_numeric(player_tx["roster_id"], errors="coerce") == prev_rid)).any())
+        if curr_rid is not None and not player_tx.empty:
+            add_found = bool(((player_tx["action"] == "ADD") & (pd.to_numeric(player_tx["roster_id"], errors="coerce") == curr_rid)).any())
+
+        ok = drop_found and add_found
+        rows.append({
+            "sleeper_player_id": pid,
+            "previous_roster_id": prev_rid,
+            "current_roster_id": curr_rid,
+            "expected_drop_found": drop_found,
+            "expected_add_found": add_found,
+            "status": "PASS" if ok else "FAIL",
+            "detail": "transaction explains ownership delta" if ok else "UNRECONCILED_ROSTER_DELTA",
+        })
+    return pd.DataFrame(rows, columns=columns)

@@ -12,6 +12,7 @@ def main():
     p.add_argument("--week", type=int, required=False)
     p.add_argument("--output-dir", default="output")
     p.add_argument("--fixture-dir", default=None, help="Read local JSON fixtures instead of calling Sleeper")
+    p.add_argument("--previous-state", default=None, help="Optional prior league_state_current.csv for roster-delta reconciliation")
     p.add_argument("--healthcheck", action="store_true", help="Test live Sleeper connectivity and league resolution only")
     p.add_argument("--skip-players-healthcheck", action="store_true", help="Skip the large /players/nfl endpoint during healthcheck")
     args = p.parse_args()
@@ -30,8 +31,13 @@ def main():
     if args.week is None:
         p.error("--week is required unless --healthcheck is used")
 
-    result = run_refresh(week=args.week, output_dir=args.output_dir, fixture_dir=args.fixture_dir)
-    printable = {k: str(v) if not isinstance(v, list) else v for k, v in result.items()}
+    result = run_refresh(
+        week=args.week,
+        output_dir=args.output_dir,
+        fixture_dir=args.fixture_dir,
+        previous_state=args.previous_state,
+    )
+    printable = {k: str(v) if not isinstance(v, (list, int, type(None))) else v for k, v in result.items()}
     print(json.dumps(printable, indent=2))
     if result["critical_failures"]:
         raise SystemExit(2)
