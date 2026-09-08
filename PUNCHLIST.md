@@ -34,3 +34,13 @@
 - [ ] Framework matchup packet generation
 - [ ] Schedule production refresh cadence
 - [ ] Retire ESPN current-state truth after final migration validation
+
+## Phase 3 — Framework input derivation
+- [x] Derive weekly matchup identity from validated Sleeper state
+- [x] Derive starter/bench/slot context for target and opponent
+- [x] Add canonical external enrichment adapter schema
+- [x] Add framework readiness gate
+- [x] Generate structural framework matchup packet
+- [ ] Select/live-test external projection source
+- [ ] Attach fresh injury/practice/role/ecosystem/Vegas/weather enrichment
+- [ ] Open framework gate only after required enrichment coverage passes

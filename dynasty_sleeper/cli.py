@@ -14,6 +14,7 @@ def main():
     p.add_argument("--fixture-dir", default=None, help="Read local JSON fixtures instead of calling Sleeper")
     p.add_argument("--previous-state", default=None, help="Optional prior league_state_current.csv for roster-delta reconciliation")
     p.add_argument("--healthcheck", action="store_true", help="Test live Sleeper connectivity and league resolution only")
+    p.add_argument("--enrichment-file", default=None, help="Optional standardized player_week_context.csv external enrichment input")
     p.add_argument("--skip-players-healthcheck", action="store_true", help="Skip the large /players/nfl endpoint during healthcheck")
     args = p.parse_args()
 
@@ -36,6 +37,7 @@ def main():
         output_dir=args.output_dir,
         fixture_dir=args.fixture_dir,
         previous_state=args.previous_state,
+        enrichment_file=args.enrichment_file,
     )
     printable = {k: str(v) if not isinstance(v, (list, int, type(None))) else v for k, v in result.items()}
     print(json.dumps(printable, indent=2))

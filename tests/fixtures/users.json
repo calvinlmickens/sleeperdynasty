@@ -1,1 +1,72 @@
-[{"user_id": "1001", "display_name": "Manager 1", "metadata": {"team_name": "Team 1"}}, {"user_id": "1002", "display_name": "Manager 2", "metadata": {"team_name": "Team 2"}}, {"user_id": "1003", "display_name": "Manager 3", "metadata": {"team_name": "Team 3"}}, {"user_id": "1004", "display_name": "Manager 4", "metadata": {"team_name": "Team 4"}}, {"user_id": "1005", "display_name": "Manager 5", "metadata": {"team_name": "Team 5"}}, {"user_id": "1006", "display_name": "Manager 6", "metadata": {"team_name": "Team 6"}}, {"user_id": "1007", "display_name": "Manager 7", "metadata": {"team_name": "Team 7"}}, {"user_id": "1008", "display_name": "Manager 8", "metadata": {"team_name": "Team 8"}}, {"user_id": "1009", "display_name": "Manager 9", "metadata": {"team_name": "Team 9"}}, {"user_id": "1010", "display_name": "Manager 10", "metadata": {"team_name": "Team 10"}}]
+[
+  {
+    "user_id": "1001",
+    "display_name": "Manager 1",
+    "metadata": {
+      "team_name": "Team 1"
+    }
+  },
+  {
+    "user_id": "1002",
+    "display_name": "Manager 2",
+    "metadata": {
+      "team_name": "Team 2"
+    }
+  },
+  {
+    "user_id": "1003",
+    "display_name": "Manager 3",
+    "metadata": {
+      "team_name": "Team 3"
+    }
+  },
+  {
+    "user_id": "1004",
+    "display_name": "Manager 4",
+    "metadata": {
+      "team_name": "Team 4"
+    }
+  },
+  {
+    "user_id": "1005",
+    "display_name": "Manager 5",
+    "metadata": {
+      "team_name": "Team 5"
+    }
+  },
+  {
+    "user_id": "1006",
+    "display_name": "Manager 6",
+    "metadata": {
+      "team_name": "Team 6"
+    }
+  },
+  {
+    "user_id": "1007",
+    "display_name": "Manager 7",
+    "metadata": {
+      "team_name": "Team 7"
+    }
+  },
+  {
+    "user_id": "1008",
+    "display_name": "Manager 8",
+    "metadata": {
+      "team_name": "Team 8"
+    }
+  },
+  {
+    "user_id": "1009",
+    "display_name": "Manager 9",
+    "metadata": {
+      "team_name": "Team 9"
+    }
+  },
+  {
+    "user_id": "1010",
+    "display_name": "Manager 10",
+    "metadata": {
+      "team_name": "RuffRyders Reloaded"
+    }
+  }
+]

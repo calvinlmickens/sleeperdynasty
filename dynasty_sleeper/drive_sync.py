@@ -21,7 +21,12 @@ PERSISTENT_FILES = [
     "league_transactions_master.csv",
     "reconciliation_report.csv",
     "roster_delta_reconciliation.csv",
+    "weekly_matchup_context.csv",
+    "weekly_matchup_summary.csv",
+    "framework_matchup_packet.md",
 ]
+OPTIONAL_INPUT_FILES = ["player_week_context.csv"]
+DOWNLOAD_FILES = PERSISTENT_FILES + OPTIONAL_INPUT_FILES
 
 
 def _credentials() -> tuple[str, str, str, str]:
@@ -109,7 +114,7 @@ def _ensure_latest_folder(token: str, root_folder_id: str) -> dict:
     return resp.json()
 
 
-def download_latest(destination: str | Path, filenames: Iterable[str] = PERSISTENT_FILES) -> dict:
+def download_latest(destination: str | Path, filenames: Iterable[str] = DOWNLOAD_FILES) -> dict:
     token, root_folder_id = _access_token()
     root = _verify_root(token, root_folder_id)
     latest = _ensure_latest_folder(token, root_folder_id)

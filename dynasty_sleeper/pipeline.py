@@ -12,6 +12,7 @@ from .client import SleeperClient
 from .config import DEFAULT_CONFIG, LeagueConfig
 from .normalize import normalize_league_state, normalize_transactions
 from .reconcile import reconcile_snapshot, critical_failures, reconcile_roster_delta
+from .matchup import load_enrichment, build_weekly_matchup_context, build_weekly_matchup_summary, write_framework_packet
 
 
 def merge_transaction_master(master_path: Path, current: pd.DataFrame) -> pd.DataFrame:
@@ -67,6 +68,7 @@ def run_refresh(
     fixture_dir: str | Path | None = None,
     pull_players: bool = True,
     previous_state: str | Path | None = None,
+    enrichment_file: str | Path | None = None,
 ) -> dict[str, Path | list[str] | int | None]:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -113,6 +115,9 @@ def run_refresh(
     picks_path = output_dir / "traded_picks_current.csv"
     delta_path = output_dir / "roster_delta_reconciliation.csv"
     manifest_path = output_dir / "manifest.json"
+    matchup_context_path = output_dir / "weekly_matchup_context.csv"
+    matchup_summary_path = output_dir / "weekly_matchup_summary.csv"
+    framework_packet_path = output_dir / "framework_matchup_packet.md"
 
     state.to_csv(state_path, index=False)
     summary.to_csv(summary_path, index=False)
@@ -141,9 +146,16 @@ def run_refresh(
         delta_report = pd.DataFrame([{"status": "BASELINE", "detail": "no previous state supplied; current snapshot establishes baseline"}])
     delta_report.to_csv(delta_path, index=False)
 
-    overall_status = "PASS" if not failures and not delta_failures else "FAIL"
+    enrichment, enrichment_status = load_enrichment(enrichment_file, week)
+    matchup_context, matchup_meta = build_weekly_matchup_context(league, state, target_roster_id, week, enrichment) if target_roster_id is not None else (pd.DataFrame(), {"status": "FAIL", "reason": "target_roster_unresolved"})
+    matchup_context.to_csv(matchup_context_path, index=False)
+    matchup_summary = build_weekly_matchup_summary(matchup_context, matchup_meta, enrichment_status)
+    matchup_summary.to_csv(matchup_summary_path, index=False)
+    write_framework_packet(framework_packet_path, matchup_context, matchup_summary)
+
+    overall_status = "PASS" if not failures and not delta_failures and matchup_meta.get("status") == "PASS" else "FAIL"
     manifest = {
-        "schema_version": "0.4",
+        "schema_version": "0.5",
         "generated_at_utc": pulled_at,
         "overall_status": overall_status,
         "league_id": config.league_id,
@@ -167,10 +179,16 @@ def run_refresh(
         },
         "critical_reconciliation_failures": failures,
         "unreconciled_roster_delta_player_ids": delta_failures,
+        "matchup_derivation_status": matchup_meta.get("status"),
+        "opponent_roster_id": matchup_meta.get("opponent_roster_id"),
+        "opponent_team_name": matchup_meta.get("opponent_team_name"),
+        "external_enrichment_status": enrichment_status,
+        "framework_ready": bool(matchup_summary.iloc[0].get("framework_ready", False)) if not matchup_summary.empty else False,
+        "framework_gate": matchup_summary.iloc[0].get("framework_gate") if not matchup_summary.empty else "HOLD_MATCHUP_DERIVATION_FAILED",
         "files": {},
     }
 
-    for p in [state_path, summary_path, tx_current_path, tx_master_path, report_path, picks_path, delta_path]:
+    for p in [state_path, summary_path, tx_current_path, tx_master_path, report_path, picks_path, delta_path, matchup_context_path, matchup_summary_path, framework_packet_path]:
         manifest["files"][p.name] = {"sha256": _sha256(p), "bytes": p.stat().st_size}
     _write_json(manifest_path, manifest)
 
@@ -183,6 +201,9 @@ def run_refresh(
         "reconciliation": report_path,
         "roster_delta_reconciliation": delta_path,
         "manifest": manifest_path,
+        "weekly_matchup_context": matchup_context_path,
+        "weekly_matchup_summary": matchup_summary_path,
+        "framework_matchup_packet": framework_packet_path,
         "target_roster_id": target_roster_id,
         "critical_failures": failures + (["UNRECONCILED_ROSTER_DELTA"] if delta_failures else []),
     }
