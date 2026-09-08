@@ -1,0 +1,86 @@
+name: Dynasty Sleeper Refresh
+
+on:
+  workflow_dispatch:
+    inputs:
+      week:
+        description: "NFL week"
+        required: true
+        default: "1"
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install requests pandas
+
+      - name: Download prior validated baseline from Google Drive
+        env:
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        run: |
+          rm -rf baseline
+          python -m dynasty_sleeper.drive_sync download --dest baseline
+
+      - name: Run live Sleeper refresh with drift reconciliation
+        shell: bash
+        run: |
+          rm -rf output
+          mkdir -p output
+
+          if [ -f baseline/league_transactions_master.csv ]; then
+            cp baseline/league_transactions_master.csv output/league_transactions_master.csv
+          fi
+
+          PREVIOUS_STATE_ARGS=()
+          ENRICHMENT_ARGS=()
+          if [ -f baseline/league_state_current.csv ]; then
+            PREVIOUS_STATE_ARGS=(--previous-state baseline/league_state_current.csv)
+          fi
+          if [ -f baseline/player_week_context.csv ]; then
+            ENRICHMENT_ARGS=(--enrichment-file baseline/player_week_context.csv)
+          fi
+
+          python -m dynasty_sleeper.cli \
+            --week "${{ inputs.week }}" \
+            --output-dir output \
+            "${PREVIOUS_STATE_ARGS[@]}" \
+            "${ENRICHMENT_ARGS[@]}"
+
+      - name: Show manifest
+        if: always()
+        run: |
+          if [ -f output/manifest.json ]; then
+            cat output/manifest.json
+          fi
+
+      - name: Persist validated baseline to Google Drive
+        env:
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        run: |
+          python -m dynasty_sleeper.drive_sync upload --source output
+
+      - name: Upload diagnostic artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sleeper-refresh-week-${{ inputs.week }}
+          path: output/
+          if-no-files-found: error
+          retention-days: 14
