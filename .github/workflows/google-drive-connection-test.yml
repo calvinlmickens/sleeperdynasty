@@ -14,14 +14,14 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependency
-        run: pip install requests
+        run: |
+          pip install requests
 
-      - name: Test OAuth and Drive folder access
+      - name: Create app-owned Drive folder and test access
         env:
           GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
           GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
           GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
-          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
         run: |
           python - <<'PY'
           import json
@@ -29,115 +29,148 @@ jobs:
           import sys
           import requests
 
-          required = [
-              "GOOGLE_OAUTH_CLIENT_ID",
-              "GOOGLE_OAUTH_CLIENT_SECRET",
-              "GOOGLE_OAUTH_REFRESH_TOKEN",
-              "GOOGLE_DRIVE_FOLDER_ID",
-          ]
-          missing = [name for name in required if not os.environ.get(name)]
-          if missing:
-              print(json.dumps({"status": "FAIL", "stage": "secrets", "missing": missing}, indent=2))
-              sys.exit(2)
+          client_id = os.environ["GOOGLE_OAUTH_CLIENT_ID"]
+          client_secret = os.environ["GOOGLE_OAUTH_CLIENT_SECRET"]
+          refresh_token = os.environ["GOOGLE_OAUTH_REFRESH_TOKEN"]
 
           token_resp = requests.post(
               "https://oauth2.googleapis.com/token",
               data={
-                  "client_id": os.environ["GOOGLE_OAUTH_CLIENT_ID"],
-                  "client_secret": os.environ["GOOGLE_OAUTH_CLIENT_SECRET"],
-                  "refresh_token": os.environ["GOOGLE_OAUTH_REFRESH_TOKEN"],
+                  "client_id": client_id,
+                  "client_secret": client_secret,
+                  "refresh_token": refresh_token,
                   "grant_type": "refresh_token",
               },
               timeout=30,
           )
-          if not token_resp.ok:
+
+          if token_resp.status_code != 200:
               print(json.dumps({
                   "status": "FAIL",
-                  "stage": "oauth_token_exchange",
+                  "stage": "token_exchange",
                   "http_status": token_resp.status_code,
-                  "response": token_resp.text[:1000],
+                  "response": token_resp.text,
               }, indent=2))
               sys.exit(2)
 
-          access_token = token_resp.json().get("access_token")
+          access_token = token_resp.json()["access_token"]
           headers = {"Authorization": f"Bearer {access_token}"}
-          folder_id = os.environ["GOOGLE_DRIVE_FOLDER_ID"]
 
-          folder_resp = requests.get(
-              f"https://www.googleapis.com/drive/v3/files/{folder_id}",
-              headers=headers,
-              params={"fields": "id,name,mimeType,capabilities(canAddChildren,canEdit)"},
+          # Create app-owned folder
+          folder_metadata = {
+              "name": "Dynasty Sleeper Automation",
+              "mimeType": "application/vnd.google-apps.folder",
+          }
+
+          folder_resp = requests.post(
+              "https://www.googleapis.com/drive/v3/files",
+              headers={**headers, "Content-Type": "application/json"},
+              json=folder_metadata,
+              params={"fields": "id,name"},
               timeout=30,
           )
-          if not folder_resp.ok:
+
+          if folder_resp.status_code not in (200, 201):
               print(json.dumps({
                   "status": "FAIL",
-                  "stage": "folder_access",
+                  "stage": "folder_create",
                   "http_status": folder_resp.status_code,
-                  "response": folder_resp.text[:1000],
-                  "note": "OAuth worked, but this app token cannot access the configured My Drive folder.",
+                  "response": folder_resp.text,
               }, indent=2))
               sys.exit(2)
 
           folder = folder_resp.json()
-          if folder.get("mimeType") != "application/vnd.google-apps.folder":
-              print(json.dumps({"status": "FAIL", "stage": "folder_validation", "folder": folder}, indent=2))
-              sys.exit(2)
+          folder_id = folder["id"]
 
-          metadata = {
+          print("APP_OWNED_DRIVE_FOLDER_CREATED")
+          print(f"GOOGLE_DRIVE_FOLDER_ID={folder_id}")
+          print(f"Folder name: {folder.get('name')}")
+
+          # Create test file in folder
+          file_metadata = {
               "name": "dynasty_sleeper_connection_test.txt",
               "parents": [folder_id],
-              "mimeType": "text/plain",
           }
-          create_resp = requests.post(
-              "https://www.googleapis.com/drive/v3/files",
-              headers={**headers, "Content-Type": "application/json"},
-              params={"fields": "id,name,parents"},
-              json=metadata,
-              timeout=30,
-          )
-          if not create_resp.ok:
-              print(json.dumps({
-                  "status": "FAIL",
-                  "stage": "create_test_file",
-                  "http_status": create_resp.status_code,
-                  "response": create_resp.text[:1000],
-                  "folder": folder,
-              }, indent=2))
-              sys.exit(2)
 
-          file_id = create_resp.json()["id"]
-          upload_resp = requests.patch(
-              f"https://www.googleapis.com/upload/drive/v3/files/{file_id}",
-              headers={**headers, "Content-Type": "text/plain"},
-              params={"uploadType": "media"},
-              data=b"Dynasty Sleeper Google Drive connection test: PASS\n",
+          multipart_boundary = "foo_bar_baz"
+          metadata_json = json.dumps(file_metadata)
+          file_content = "Dynasty Sleeper Google Drive connection test passed."
+
+          body = (
+              f"--{multipart_boundary}\r\n"
+              "Content-Type: application/json; charset=UTF-8\r\n\r\n"
+              f"{metadata_json}\r\n"
+              f"--{multipart_boundary}\r\n"
+              "Content-Type: text/plain\r\n\r\n"
+              f"{file_content}\r\n"
+              f"--{multipart_boundary}--"
+          )
+
+          upload_resp = requests.post(
+              "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,parents",
+              headers={
+                  **headers,
+                  "Content-Type": f"multipart/related; boundary={multipart_boundary}",
+              },
+              data=body.encode("utf-8"),
               timeout=30,
           )
-          if not upload_resp.ok:
+
+          if upload_resp.status_code not in (200, 201):
               print(json.dumps({
                   "status": "FAIL",
-                  "stage": "upload_test_content",
+                  "stage": "test_file_create",
                   "http_status": upload_resp.status_code,
-                  "response": upload_resp.text[:1000],
-                  "test_file_id": file_id,
+                  "response": upload_resp.text,
+                  "folder_id": folder_id,
               }, indent=2))
               sys.exit(2)
 
+          test_file = upload_resp.json()
+          test_file_id = test_file["id"]
+
+          # Verify file
+          verify_resp = requests.get(
+              f"https://www.googleapis.com/drive/v3/files/{test_file_id}",
+              headers=headers,
+              params={"fields": "id,name,parents"},
+              timeout=30,
+          )
+
+          if verify_resp.status_code != 200:
+              print(json.dumps({
+                  "status": "FAIL",
+                  "stage": "test_file_verify",
+                  "http_status": verify_resp.status_code,
+                  "response": verify_resp.text,
+                  "folder_id": folder_id,
+              }, indent=2))
+              sys.exit(2)
+
+          # Delete test file
           delete_resp = requests.delete(
-              f"https://www.googleapis.com/drive/v3/files/{file_id}",
+              f"https://www.googleapis.com/drive/v3/files/{test_file_id}",
               headers=headers,
               timeout=30,
           )
 
+          if delete_resp.status_code not in (204, 200):
+              print(json.dumps({
+                  "status": "FAIL",
+                  "stage": "test_file_cleanup",
+                  "http_status": delete_resp.status_code,
+                  "response": delete_resp.text,
+                  "folder_id": folder_id,
+              }, indent=2))
+              sys.exit(2)
+
           print(json.dumps({
               "status": "PASS",
               "oauth_token_exchange": "PASS",
-              "folder_access": "PASS",
-              "folder_name": folder.get("name"),
-              "can_add_children": folder.get("capabilities", {}).get("canAddChildren"),
+              "folder_create": "PASS",
+              "folder_id": folder_id,
               "test_file_create": "PASS",
-              "test_file_content_upload": "PASS",
-              "test_file_cleanup": "PASS" if delete_resp.ok else f"REVIEW_HTTP_{delete_resp.status_code}",
+              "test_file_verify": "PASS",
+              "test_file_cleanup": "PASS",
           }, indent=2))
           PY
