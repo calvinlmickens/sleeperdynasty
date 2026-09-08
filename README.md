@@ -1,60 +1,30 @@
-# Dynasty Sleeper Migration — v0.3
+# Dynasty Sleeper Migration v0.4
 
-A lightweight standalone Python package for migrating the **1 Genius and 9 Idiots** league-state input layer from ESPN to Sleeper.
+Standalone Sleeper league-state refresh package for **1 Genius and 9 Idiots**.
 
-## v0.3 milestone
+## Production flow
 
-v0.3 adds the first production-style live bundle:
+Sleeper API → GitHub Actions → reconciliation → Google Drive `latest/` baseline.
 
-- full live league/user/roster/matchup pull
-- Sleeper player dictionary cache inside the run bundle
-- season-to-date transaction rounds through the requested week
-- normalized current league state
-- roster summary for stable roster/team ID resolution
-- traded-pick snapshot
-- hard reconciliation report
-- optional previous-state roster-delta reconciliation
-- `manifest.json` with freshness timestamp, counts, hashes, target-roster resolution, and overall PASS/FAIL
-- GitHub Actions workflow that uploads the entire output directory as a downloadable artifact
+The workflow downloads the prior validated baseline before every refresh. It then pulls fresh Sleeper state, compares ownership against the prior snapshot, reconciles roster changes against completed Sleeper transactions, and persists the new baseline only when `manifest.json` reports `overall_status: PASS`.
 
-## Health check
+A failed refresh never overwrites the last known-good Drive state.
 
-```bash
-dynasty-refresh --healthcheck --week 1
-```
+## Persistent Drive files
 
-or without package installation:
-
-```bash
-python -m dynasty_sleeper.cli --healthcheck --week 1
-```
-
-## Live refresh
-
-```bash
-python -m dynasty_sleeper.cli --week 1 --output-dir output
-```
-
-## Compare against a prior snapshot
-
-```bash
-python -m dynasty_sleeper.cli --week 1 --output-dir output --previous-state state/league_state_previous.csv
-```
-
-## v0.3 outputs
-
+- `manifest.json`
 - `league_state_current.csv`
 - `roster_summary_current.csv`
-- `league_transactions_current.csv`
 - `league_transactions_master.csv`
-- `traded_picks_current.csv`
 - `reconciliation_report.csv`
 - `roster_delta_reconciliation.csv`
-- `manifest.json`
-- `raw/*.json`
 
-The run exits with status 2 if a critical state-reconciliation check fails or an observed ownership delta cannot be reconciled to Sleeper transactions.
+Raw API responses and other diagnostic outputs remain available through the GitHub Actions artifact rather than being permanently duplicated in Drive.
 
-## GitHub Actions
+## Run 1
 
-The included `.github/workflows/dynasty-sleeper-refresh.yml` supports manual execution with a Week input and uploads the generated `output/` directory as a GitHub artifact. Google Drive handoff is intentionally deferred until the live bundle passes validation.
+The first Drive-backed run should report `baseline_status: ESTABLISHED_THIS_RUN` and create the six persistent files in the app-owned `latest/` folder.
+
+## Run 2
+
+The second run should report `baseline_status: COMPARED_TO_PREVIOUS`. Any ownership delta must reconcile to a completed Sleeper transaction or the refresh fails with `UNRECONCILED_ROSTER_DELTA` and Drive is not overwritten.

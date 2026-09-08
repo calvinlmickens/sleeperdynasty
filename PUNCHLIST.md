@@ -1,41 +1,36 @@
-# Dynasty Sleeper Migration Punchlist
+# Dynasty Sleeper Migration Punchlist — v0.4
 
-## Governance
-- [x] Migration is platform-input replacement only; no Dynasty Framework doctrine changes.
-- [x] Sleeper IDs are canonical live-state keys.
-- [x] Stale ESPN files will cease to be current truth once Sleeper validation is complete.
+## Completed
+- [x] Governance lock: platform-input migration only
+- [x] Sleeper live API health check
+- [x] Live league identity validation
+- [x] 10-user / 10-roster validation
+- [x] 270-player ownership baseline validation
+- [x] Stable RuffRyders Reloaded roster ID resolution
+- [x] Live matchup pull
+- [x] Transaction normalization
+- [x] First known-good Sleeper baseline
+- [x] Google OAuth authentication
+- [x] App-owned My Drive folder creation
+- [x] Configured Drive folder ID read/write test
+- [x] Google Drive persistence helper
+- [x] Last-known-good overwrite protection
+- [x] Prior baseline download before refresh
+- [x] Roster-delta vs transaction reconciliation hook
 
-## Phase 1 — Live validation
-- [x] Standalone package skeleton.
-- [x] Sleeper connectivity health check.
-- [x] GitHub Actions runtime reaches Sleeper.
-- [x] Correct league ID/name resolves.
-- [x] 10 users and 10 rosters resolve.
-- [x] Matchup endpoint resolves.
-- [x] Player dictionary endpoint resolves.
-- [x] Full live refresh code built.
-- [x] Raw source bundle built.
-- [x] `manifest.json` freshness/count/hash layer built.
-- [x] GitHub artifact upload workflow built.
-- [ ] Run first live full refresh in GitHub.
-- [ ] Inspect `roster_summary_current.csv` and confirm RuffRyders Reloaded roster ID.
-- [ ] Validate actual roster counts/ownership and accept first known-good baseline.
-
-## Phase 2 — Roster/transaction drift protection
-- [x] Stable transaction normalization by Sleeper transaction ID.
-- [x] Season-to-date transaction pull through requested week.
-- [x] Snapshot ownership-delta function.
-- [x] Roster-delta vs transaction reconciliation function.
-- [x] `UNRECONCILED_ROSTER_DELTA` hard-stop behavior.
-- [ ] Persist prior validated snapshot between production runs (Google Drive phase).
-- [ ] Validate one real add/drop or waiver change against delta logic.
-- [ ] Validate one trade when available.
-- [ ] Add waiver-priority drift monitoring.
+## Immediate validation
+- [ ] Run 1: establish Drive-backed `latest/` baseline
+- [ ] Confirm six persistent files appear in Drive
+- [ ] Confirm manifest `overall_status: PASS`
+- [ ] Confirm manifest `baseline_status: ESTABLISHED_THIS_RUN`
+- [ ] Run 2: download and compare prior Drive baseline
+- [ ] Confirm `baseline_status: COMPARED_TO_PREVIOUS`
+- [ ] Confirm no unexplained ownership drift
 
 ## Next
-- [ ] Connect Google Drive handoff after GitHub artifact bundle passes.
-- [ ] Add compact waiver engine.
-- [ ] Add projection/external-intelligence adapter.
-- [ ] Connect Opponent Registry material-change triggers.
-- [ ] Generate `framework_matchup_packet.md`.
-- [ ] Parallel ESPN/Sleeper validation and ESPN retirement.
+- [ ] Registry-impact classification for material opponent changes
+- [ ] Compact waiver engine
+- [ ] Projection/external-intelligence adapter
+- [ ] Framework matchup packet generation
+- [ ] Schedule production refresh cadence
+- [ ] Retire ESPN current-state truth after final migration validation

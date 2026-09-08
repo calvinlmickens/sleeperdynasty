@@ -120,7 +120,10 @@ def run_refresh(
     master = merge_transaction_master(tx_master_path, tx_current)
     master.to_csv(tx_master_path, index=False)
     report.to_csv(report_path, index=False)
-    pd.DataFrame(traded_picks).to_csv(picks_path, index=False)
+    picks_df = pd.DataFrame(traded_picks)
+    if picks_df.empty:
+        picks_df = pd.DataFrame(columns=["season", "round", "roster_id", "previous_owner_id", "owner_id"])
+    picks_df.to_csv(picks_path, index=False)
 
     baseline_status = "ESTABLISHED_THIS_RUN"
     delta_failures: list[str] = []
@@ -140,7 +143,7 @@ def run_refresh(
 
     overall_status = "PASS" if not failures and not delta_failures else "FAIL"
     manifest = {
-        "schema_version": "0.3",
+        "schema_version": "0.4",
         "generated_at_utc": pulled_at,
         "overall_status": overall_status,
         "league_id": config.league_id,
