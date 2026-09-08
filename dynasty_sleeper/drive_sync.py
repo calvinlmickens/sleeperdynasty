@@ -24,9 +24,9 @@ PERSISTENT_FILES = [
     "weekly_matchup_context.csv",
     "weekly_matchup_summary.csv",
     "framework_matchup_packet.md",
+    "player_week_context.csv",
 ]
-OPTIONAL_INPUT_FILES = ["player_week_context.csv"]
-DOWNLOAD_FILES = PERSISTENT_FILES + OPTIONAL_INPUT_FILES
+DOWNLOAD_FILES = PERSISTENT_FILES
 
 
 def _credentials() -> tuple[str, str, str, str]:

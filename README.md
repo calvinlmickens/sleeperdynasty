@@ -1,16 +1,35 @@
-# Dynasty Sleeper Migration v0.4
+# Dynasty Sleeper Automation v0.6
 
-Standalone Sleeper league-state refresh package for **1 Genius and 9 Idiots**.
+Purpose: replace the ESPN league-state ingestion layer for **1 Genius and 9 Idiots** without changing Dynasty Framework doctrine.
 
 ## Production flow
 
-Sleeper API → GitHub Actions → reconciliation → Google Drive `latest/` baseline.
+Sleeper API -> GitHub Actions -> reconciliation -> Google Drive `latest/` -> Dynasty Framework.
 
-The workflow downloads the prior validated baseline before every refresh. It then pulls fresh Sleeper state, compares ownership against the prior snapshot, reconciles roster changes against completed Sleeper transactions, and persists the new baseline only when `manifest.json` reports `overall_status: PASS`.
+## v0.6 enrichment layer
 
-A failed refresh never overwrites the last known-good Drive state.
+v0.6 automatically attempts to retrieve Sleeper weekly projections from Sleeper's separate projections host and builds `player_week_context.csv` every refresh.
 
-## Persistent Drive files
+The adapter:
+- keeps Sleeper player IDs as the canonical key;
+- uses current Sleeper injury/practice player-state fields;
+- calculates a directional **league-adjusted projection** from projected stat components and the league's actual `scoring_settings` when matching stat keys are available;
+- falls back to a Sleeper baseline fantasy projection when projected stat components cannot support a custom-score calculation;
+- records projection method, contributing scoring keys, source timestamp, and a warning field;
+- degrades safely if the projection endpoint is unavailable because the projection endpoint is not part of Sleeper's documented core league API.
+
+## Framework gate
+
+Automated projections do **not** by themselves open CPI/WUS/FLEX execution.
+
+Possible gates:
+- `HOLD_EXTERNAL_INTELLIGENCE_REQUIRED` - usable starter projections are not available.
+- `HOLD_LIVE_INTELLIGENCE_SWEEP_REQUIRED` - projections are available, but current role/environment intelligence still needs validation.
+- `OPEN_FOR_CPI_WUS_FLEX` - projections plus role/environment context are present.
+
+This preserves Volume 3 governance: league state and projections may be automated, while current injury developments, role changes, offensive ecosystem changes, Vegas/weather context, and other decision-critical football intelligence must still be validated before final framework execution.
+
+## Primary persistent outputs
 
 - `manifest.json`
 - `league_state_current.csv`
@@ -18,24 +37,17 @@ A failed refresh never overwrites the last known-good Drive state.
 - `league_transactions_master.csv`
 - `reconciliation_report.csv`
 - `roster_delta_reconciliation.csv`
+- `player_week_context.csv`
+- `weekly_matchup_context.csv`
+- `weekly_matchup_summary.csv`
+- `framework_matchup_packet.md`
 
-Raw API responses and other diagnostic outputs remain available through the GitHub Actions artifact rather than being permanently duplicated in Drive.
+## Run
 
-## Run 1
+GitHub Actions: **Dynasty Sleeper Refresh**.
 
-The first Drive-backed run should report `baseline_status: ESTABLISHED_THIS_RUN` and create the six persistent files in the app-owned `latest/` folder.
+Manual fixture run:
 
-## Run 2
-
-The second run should report `baseline_status: COMPARED_TO_PREVIOUS`. Any ownership delta must reconcile to a completed Sleeper transaction or the refresh fails with `UNRECONCILED_ROSTER_DELTA` and Drive is not overwritten.
-
-## v0.5 — Weekly matchup derivation + enrichment interface
-
-v0.5 adds a compact framework-input layer derived from the validated Sleeper baseline:
-
-- `weekly_matchup_context.csv` — 54-row target/opponent player view with starter slots and optional enrichment
-- `weekly_matchup_summary.csv` — matchup identity, starter/bench counts, scores, and projection aggregates when available
-- `framework_matchup_packet.md` — human-readable platform-state packet with an explicit framework readiness gate
-- `player_week_context_TEMPLATE.csv` — canonical interface for external projections, practice/injury, game environment, role and ecosystem enrichment
-
-The pipeline does not fabricate missing external context. Without a populated enrichment file the packet is generated, but the gate remains `HOLD_EXTERNAL_INTELLIGENCE_REQUIRED`; CPI/WUS/FLEX/final lineup execution must not proceed.
+```bash
+python -m dynasty_sleeper.cli --week 1 --fixture-dir tests/fixtures --output-dir output
+```

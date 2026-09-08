@@ -1,0 +1,2432 @@
+[
+  {
+    "player_id": "10000",
+    "player": {
+      "player_id": "10000"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "10001",
+    "player": {
+      "player_id": "10001"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "10002",
+    "player": {
+      "player_id": "10002"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "10003",
+    "player": {
+      "player_id": "10003"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "10004",
+    "player": {
+      "player_id": "10004"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "10005",
+    "player": {
+      "player_id": "10005"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "10006",
+    "player": {
+      "player_id": "10006"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "10007",
+    "player": {
+      "player_id": "10007"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "10008",
+    "player": {
+      "player_id": "10008"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "10009",
+    "player": {
+      "player_id": "10009"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "10010",
+    "player": {
+      "player_id": "10010"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "10011",
+    "player": {
+      "player_id": "10011"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "10012",
+    "player": {
+      "player_id": "10012"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "10013",
+    "player": {
+      "player_id": "10013"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "10014",
+    "player": {
+      "player_id": "10014"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "10015",
+    "player": {
+      "player_id": "10015"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "10016",
+    "player": {
+      "player_id": "10016"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "10017",
+    "player": {
+      "player_id": "10017"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "10018",
+    "player": {
+      "player_id": "10018"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "10019",
+    "player": {
+      "player_id": "10019"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "10020",
+    "player": {
+      "player_id": "10020"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "10021",
+    "player": {
+      "player_id": "10021"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "10022",
+    "player": {
+      "player_id": "10022"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "10023",
+    "player": {
+      "player_id": "10023"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "10024",
+    "player": {
+      "player_id": "10024"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "10025",
+    "player": {
+      "player_id": "10025"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "10026",
+    "player": {
+      "player_id": "10026"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "20000",
+    "player": {
+      "player_id": "20000"
+    },
+    "stats": {
+      "pts_ppr": 13.5
+    }
+  },
+  {
+    "player_id": "20001",
+    "player": {
+      "player_id": "20001"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "20002",
+    "player": {
+      "player_id": "20002"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "20003",
+    "player": {
+      "player_id": "20003"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "20004",
+    "player": {
+      "player_id": "20004"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "20005",
+    "player": {
+      "player_id": "20005"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "20006",
+    "player": {
+      "player_id": "20006"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "20007",
+    "player": {
+      "player_id": "20007"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "20008",
+    "player": {
+      "player_id": "20008"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "20009",
+    "player": {
+      "player_id": "20009"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "20010",
+    "player": {
+      "player_id": "20010"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "20011",
+    "player": {
+      "player_id": "20011"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "20012",
+    "player": {
+      "player_id": "20012"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "20013",
+    "player": {
+      "player_id": "20013"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "20014",
+    "player": {
+      "player_id": "20014"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "20015",
+    "player": {
+      "player_id": "20015"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "20016",
+    "player": {
+      "player_id": "20016"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "20017",
+    "player": {
+      "player_id": "20017"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "20018",
+    "player": {
+      "player_id": "20018"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "20019",
+    "player": {
+      "player_id": "20019"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "20020",
+    "player": {
+      "player_id": "20020"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "20021",
+    "player": {
+      "player_id": "20021"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "20022",
+    "player": {
+      "player_id": "20022"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "20023",
+    "player": {
+      "player_id": "20023"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "20024",
+    "player": {
+      "player_id": "20024"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "20025",
+    "player": {
+      "player_id": "20025"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "20026",
+    "player": {
+      "player_id": "20026"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "30000",
+    "player": {
+      "player_id": "30000"
+    },
+    "stats": {
+      "pts_ppr": 13.25
+    }
+  },
+  {
+    "player_id": "30001",
+    "player": {
+      "player_id": "30001"
+    },
+    "stats": {
+      "pts_ppr": 13.5
+    }
+  },
+  {
+    "player_id": "30002",
+    "player": {
+      "player_id": "30002"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "30003",
+    "player": {
+      "player_id": "30003"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "30004",
+    "player": {
+      "player_id": "30004"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "30005",
+    "player": {
+      "player_id": "30005"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "30006",
+    "player": {
+      "player_id": "30006"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "30007",
+    "player": {
+      "player_id": "30007"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "30008",
+    "player": {
+      "player_id": "30008"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "30009",
+    "player": {
+      "player_id": "30009"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "30010",
+    "player": {
+      "player_id": "30010"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "30011",
+    "player": {
+      "player_id": "30011"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "30012",
+    "player": {
+      "player_id": "30012"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "30013",
+    "player": {
+      "player_id": "30013"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "30014",
+    "player": {
+      "player_id": "30014"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "30015",
+    "player": {
+      "player_id": "30015"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "30016",
+    "player": {
+      "player_id": "30016"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "30017",
+    "player": {
+      "player_id": "30017"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "30018",
+    "player": {
+      "player_id": "30018"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "30019",
+    "player": {
+      "player_id": "30019"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "30020",
+    "player": {
+      "player_id": "30020"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "30021",
+    "player": {
+      "player_id": "30021"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "30022",
+    "player": {
+      "player_id": "30022"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "30023",
+    "player": {
+      "player_id": "30023"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "30024",
+    "player": {
+      "player_id": "30024"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "30025",
+    "player": {
+      "player_id": "30025"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "30026",
+    "player": {
+      "player_id": "30026"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "40000",
+    "player": {
+      "player_id": "40000"
+    },
+    "stats": {
+      "pts_ppr": 13.0
+    }
+  },
+  {
+    "player_id": "40001",
+    "player": {
+      "player_id": "40001"
+    },
+    "stats": {
+      "pts_ppr": 13.25
+    }
+  },
+  {
+    "player_id": "40002",
+    "player": {
+      "player_id": "40002"
+    },
+    "stats": {
+      "pts_ppr": 13.5
+    }
+  },
+  {
+    "player_id": "40003",
+    "player": {
+      "player_id": "40003"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "40004",
+    "player": {
+      "player_id": "40004"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "40005",
+    "player": {
+      "player_id": "40005"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "40006",
+    "player": {
+      "player_id": "40006"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "40007",
+    "player": {
+      "player_id": "40007"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "40008",
+    "player": {
+      "player_id": "40008"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "40009",
+    "player": {
+      "player_id": "40009"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "40010",
+    "player": {
+      "player_id": "40010"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "40011",
+    "player": {
+      "player_id": "40011"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "40012",
+    "player": {
+      "player_id": "40012"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "40013",
+    "player": {
+      "player_id": "40013"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "40014",
+    "player": {
+      "player_id": "40014"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "40015",
+    "player": {
+      "player_id": "40015"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "40016",
+    "player": {
+      "player_id": "40016"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "40017",
+    "player": {
+      "player_id": "40017"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "40018",
+    "player": {
+      "player_id": "40018"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "40019",
+    "player": {
+      "player_id": "40019"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "40020",
+    "player": {
+      "player_id": "40020"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "40021",
+    "player": {
+      "player_id": "40021"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "40022",
+    "player": {
+      "player_id": "40022"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "40023",
+    "player": {
+      "player_id": "40023"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "40024",
+    "player": {
+      "player_id": "40024"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "40025",
+    "player": {
+      "player_id": "40025"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "40026",
+    "player": {
+      "player_id": "40026"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "50000",
+    "player": {
+      "player_id": "50000"
+    },
+    "stats": {
+      "pts_ppr": 12.75
+    }
+  },
+  {
+    "player_id": "50001",
+    "player": {
+      "player_id": "50001"
+    },
+    "stats": {
+      "pts_ppr": 13.0
+    }
+  },
+  {
+    "player_id": "50002",
+    "player": {
+      "player_id": "50002"
+    },
+    "stats": {
+      "pts_ppr": 13.25
+    }
+  },
+  {
+    "player_id": "50003",
+    "player": {
+      "player_id": "50003"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "50004",
+    "player": {
+      "player_id": "50004"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "50005",
+    "player": {
+      "player_id": "50005"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "50006",
+    "player": {
+      "player_id": "50006"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "50007",
+    "player": {
+      "player_id": "50007"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "50008",
+    "player": {
+      "player_id": "50008"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "50009",
+    "player": {
+      "player_id": "50009"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "50010",
+    "player": {
+      "player_id": "50010"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "50011",
+    "player": {
+      "player_id": "50011"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "50012",
+    "player": {
+      "player_id": "50012"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "50013",
+    "player": {
+      "player_id": "50013"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "50014",
+    "player": {
+      "player_id": "50014"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "50015",
+    "player": {
+      "player_id": "50015"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "50016",
+    "player": {
+      "player_id": "50016"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "50017",
+    "player": {
+      "player_id": "50017"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "50018",
+    "player": {
+      "player_id": "50018"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "50019",
+    "player": {
+      "player_id": "50019"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "50020",
+    "player": {
+      "player_id": "50020"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "50021",
+    "player": {
+      "player_id": "50021"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "50022",
+    "player": {
+      "player_id": "50022"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "50023",
+    "player": {
+      "player_id": "50023"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "50024",
+    "player": {
+      "player_id": "50024"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "50025",
+    "player": {
+      "player_id": "50025"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "50026",
+    "player": {
+      "player_id": "50026"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "60000",
+    "player": {
+      "player_id": "60000"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "60001",
+    "player": {
+      "player_id": "60001"
+    },
+    "stats": {
+      "pts_ppr": 12.75
+    }
+  },
+  {
+    "player_id": "60002",
+    "player": {
+      "player_id": "60002"
+    },
+    "stats": {
+      "pts_ppr": 13.0
+    }
+  },
+  {
+    "player_id": "60003",
+    "player": {
+      "player_id": "60003"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "60004",
+    "player": {
+      "player_id": "60004"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "60005",
+    "player": {
+      "player_id": "60005"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "60006",
+    "player": {
+      "player_id": "60006"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "60007",
+    "player": {
+      "player_id": "60007"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "60008",
+    "player": {
+      "player_id": "60008"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "60009",
+    "player": {
+      "player_id": "60009"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "60010",
+    "player": {
+      "player_id": "60010"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "60011",
+    "player": {
+      "player_id": "60011"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "60012",
+    "player": {
+      "player_id": "60012"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "60013",
+    "player": {
+      "player_id": "60013"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "60014",
+    "player": {
+      "player_id": "60014"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "60015",
+    "player": {
+      "player_id": "60015"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "60016",
+    "player": {
+      "player_id": "60016"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "60017",
+    "player": {
+      "player_id": "60017"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "60018",
+    "player": {
+      "player_id": "60018"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "60019",
+    "player": {
+      "player_id": "60019"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "60020",
+    "player": {
+      "player_id": "60020"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "60021",
+    "player": {
+      "player_id": "60021"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "60022",
+    "player": {
+      "player_id": "60022"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "60023",
+    "player": {
+      "player_id": "60023"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "60024",
+    "player": {
+      "player_id": "60024"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "60025",
+    "player": {
+      "player_id": "60025"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "60026",
+    "player": {
+      "player_id": "60026"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "70000",
+    "player": {
+      "player_id": "70000"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "70001",
+    "player": {
+      "player_id": "70001"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "70002",
+    "player": {
+      "player_id": "70002"
+    },
+    "stats": {
+      "pts_ppr": 12.75
+    }
+  },
+  {
+    "player_id": "70003",
+    "player": {
+      "player_id": "70003"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "70004",
+    "player": {
+      "player_id": "70004"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "70005",
+    "player": {
+      "player_id": "70005"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "70006",
+    "player": {
+      "player_id": "70006"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "70007",
+    "player": {
+      "player_id": "70007"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "70008",
+    "player": {
+      "player_id": "70008"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "70009",
+    "player": {
+      "player_id": "70009"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "70010",
+    "player": {
+      "player_id": "70010"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "70011",
+    "player": {
+      "player_id": "70011"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "70012",
+    "player": {
+      "player_id": "70012"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "70013",
+    "player": {
+      "player_id": "70013"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "70014",
+    "player": {
+      "player_id": "70014"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "70015",
+    "player": {
+      "player_id": "70015"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "70016",
+    "player": {
+      "player_id": "70016"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "70017",
+    "player": {
+      "player_id": "70017"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "70018",
+    "player": {
+      "player_id": "70018"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "70019",
+    "player": {
+      "player_id": "70019"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "70020",
+    "player": {
+      "player_id": "70020"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "70021",
+    "player": {
+      "player_id": "70021"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "70022",
+    "player": {
+      "player_id": "70022"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "70023",
+    "player": {
+      "player_id": "70023"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "70024",
+    "player": {
+      "player_id": "70024"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "70025",
+    "player": {
+      "player_id": "70025"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "70026",
+    "player": {
+      "player_id": "70026"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "80000",
+    "player": {
+      "player_id": "80000"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "80001",
+    "player": {
+      "player_id": "80001"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "80002",
+    "player": {
+      "player_id": "80002"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "80003",
+    "player": {
+      "player_id": "80003"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "80004",
+    "player": {
+      "player_id": "80004"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "80005",
+    "player": {
+      "player_id": "80005"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "80006",
+    "player": {
+      "player_id": "80006"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "80007",
+    "player": {
+      "player_id": "80007"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "80008",
+    "player": {
+      "player_id": "80008"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "80009",
+    "player": {
+      "player_id": "80009"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "80010",
+    "player": {
+      "player_id": "80010"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "80011",
+    "player": {
+      "player_id": "80011"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "80012",
+    "player": {
+      "player_id": "80012"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "80013",
+    "player": {
+      "player_id": "80013"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "80014",
+    "player": {
+      "player_id": "80014"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "80015",
+    "player": {
+      "player_id": "80015"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "80016",
+    "player": {
+      "player_id": "80016"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "80017",
+    "player": {
+      "player_id": "80017"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "80018",
+    "player": {
+      "player_id": "80018"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "80019",
+    "player": {
+      "player_id": "80019"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "80020",
+    "player": {
+      "player_id": "80020"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "80021",
+    "player": {
+      "player_id": "80021"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "80022",
+    "player": {
+      "player_id": "80022"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "80023",
+    "player": {
+      "player_id": "80023"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "80024",
+    "player": {
+      "player_id": "80024"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "80025",
+    "player": {
+      "player_id": "80025"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "80026",
+    "player": {
+      "player_id": "80026"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "90000",
+    "player": {
+      "player_id": "90000"
+    },
+    "stats": {
+      "pts_ppr": 13.5
+    }
+  },
+  {
+    "player_id": "90001",
+    "player": {
+      "player_id": "90001"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "90002",
+    "player": {
+      "player_id": "90002"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "90003",
+    "player": {
+      "player_id": "90003"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "90004",
+    "player": {
+      "player_id": "90004"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "90005",
+    "player": {
+      "player_id": "90005"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "90006",
+    "player": {
+      "player_id": "90006"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "90007",
+    "player": {
+      "player_id": "90007"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "90008",
+    "player": {
+      "player_id": "90008"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "90009",
+    "player": {
+      "player_id": "90009"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "90010",
+    "player": {
+      "player_id": "90010"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "90011",
+    "player": {
+      "player_id": "90011"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "90012",
+    "player": {
+      "player_id": "90012"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "90013",
+    "player": {
+      "player_id": "90013"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "90014",
+    "player": {
+      "player_id": "90014"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "90015",
+    "player": {
+      "player_id": "90015"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "90016",
+    "player": {
+      "player_id": "90016"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "90017",
+    "player": {
+      "player_id": "90017"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "90018",
+    "player": {
+      "player_id": "90018"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "90019",
+    "player": {
+      "player_id": "90019"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "90020",
+    "player": {
+      "player_id": "90020"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "90021",
+    "player": {
+      "player_id": "90021"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "90022",
+    "player": {
+      "player_id": "90022"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "90023",
+    "player": {
+      "player_id": "90023"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "90024",
+    "player": {
+      "player_id": "90024"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "90025",
+    "player": {
+      "player_id": "90025"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "90026",
+    "player": {
+      "player_id": "90026"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "100000",
+    "player": {
+      "player_id": "100000"
+    },
+    "stats": {
+      "pts_ppr": 13.25
+    }
+  },
+  {
+    "player_id": "100001",
+    "player": {
+      "player_id": "100001"
+    },
+    "stats": {
+      "pts_ppr": 13.5
+    }
+  },
+  {
+    "player_id": "100002",
+    "player": {
+      "player_id": "100002"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "100003",
+    "player": {
+      "player_id": "100003"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "100004",
+    "player": {
+      "player_id": "100004"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "100005",
+    "player": {
+      "player_id": "100005"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "100006",
+    "player": {
+      "player_id": "100006"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "100007",
+    "player": {
+      "player_id": "100007"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "100008",
+    "player": {
+      "player_id": "100008"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "100009",
+    "player": {
+      "player_id": "100009"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "100010",
+    "player": {
+      "player_id": "100010"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "100011",
+    "player": {
+      "player_id": "100011"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "100012",
+    "player": {
+      "player_id": "100012"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "100013",
+    "player": {
+      "player_id": "100013"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "100014",
+    "player": {
+      "player_id": "100014"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "100015",
+    "player": {
+      "player_id": "100015"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "100016",
+    "player": {
+      "player_id": "100016"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "100017",
+    "player": {
+      "player_id": "100017"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "100018",
+    "player": {
+      "player_id": "100018"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "100019",
+    "player": {
+      "player_id": "100019"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  },
+  {
+    "player_id": "100020",
+    "player": {
+      "player_id": "100020"
+    },
+    "stats": {
+      "pts_ppr": 12.0
+    }
+  },
+  {
+    "player_id": "100021",
+    "player": {
+      "player_id": "100021"
+    },
+    "stats": {
+      "pts_ppr": 12.25
+    }
+  },
+  {
+    "player_id": "100022",
+    "player": {
+      "player_id": "100022"
+    },
+    "stats": {
+      "pts_ppr": 12.5
+    }
+  },
+  {
+    "player_id": "100023",
+    "player": {
+      "player_id": "100023"
+    },
+    "stats": {
+      "pts_ppr": 11.0
+    }
+  },
+  {
+    "player_id": "100024",
+    "player": {
+      "player_id": "100024"
+    },
+    "stats": {
+      "pts_ppr": 11.25
+    }
+  },
+  {
+    "player_id": "100025",
+    "player": {
+      "player_id": "100025"
+    },
+    "stats": {
+      "pts_ppr": 11.5
+    }
+  },
+  {
+    "player_id": "100026",
+    "player": {
+      "player_id": "100026"
+    },
+    "stats": {
+      "pts_ppr": 11.75
+    }
+  }
+]

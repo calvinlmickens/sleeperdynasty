@@ -10,6 +10,11 @@ ENRICHMENT_COLUMNS = [
     "sleeper_player_id",
     "week",
     "projected_points",
+    "baseline_projection",
+    "league_adjusted_projection",
+    "projection_method",
+    "projection_scoring_keys_used",
+    "projection_warning",
     "injury_status_external",
     "practice_status",
     "game_total",
@@ -102,6 +107,7 @@ def build_weekly_matchup_context(
         "lineup_slot", "lineup_status", "is_starter", "starter_order",
         "status", "injury_status", "injury_status_external", "effective_injury_status", "practice_status",
         "depth_chart_position", "depth_chart_order", "projected_points_numeric", "projection_available",
+        "baseline_projection", "league_adjusted_projection", "projection_method", "projection_scoring_keys_used", "projection_warning",
         "game_total", "team_total", "weather_flag", "role_change_flag", "ecosystem_note",
         "source_name", "source_timestamp_utc", "matchup_points",
     ]
@@ -157,7 +163,16 @@ def build_weekly_matchup_summary(context: pd.DataFrame, meta: dict[str, Any], en
 
     projection_coverage = int(context["projection_available"].sum())
     projection_required = len(context)
-    framework_ready = enrichment_status == "LOADED" and projection_coverage >= 22  # all starters at minimum
+    starter_projection_coverage = int(context[context["is_starter"]]["projection_available"].sum())
+    projection_ready = enrichment_status in {"LOADED", "AUTO_LOADED"} and starter_projection_coverage >= 22
+
+    # A projection feed alone does not satisfy Volume 3's requirement to validate
+    # current injuries, role changes, and offensive environment before CPI/WUS/FLEX.
+    # The auto-enrichment layer therefore advances the packet to READY_FOR_LIVE_SWEEP,
+    # but never fabricates an OPEN decision gate.
+    role_context_present = context["role_change_flag"].notna().any() or context["ecosystem_note"].notna().any()
+    environment_context_present = context["game_total"].notna().any() or context["team_total"].notna().any() or context["weather_flag"].notna().any()
+    framework_ready = bool(projection_ready and role_context_present and environment_context_present)
 
     row = {
         "status": "PASS",
@@ -192,8 +207,16 @@ def build_weekly_matchup_summary(context: pd.DataFrame, meta: dict[str, Any], en
         "enrichment_status": enrichment_status,
         "projection_coverage_rows": projection_coverage,
         "projection_context_rows": projection_required,
+        "starter_projection_coverage_rows": starter_projection_coverage,
+        "projection_ready": projection_ready,
+        "role_context_present": bool(role_context_present),
+        "environment_context_present": bool(environment_context_present),
         "framework_ready": framework_ready,
-        "framework_gate": "OPEN_FOR_CPI_WUS_FLEX" if framework_ready else "HOLD_EXTERNAL_INTELLIGENCE_REQUIRED",
+        "framework_gate": (
+            "OPEN_FOR_CPI_WUS_FLEX" if framework_ready
+            else "HOLD_LIVE_INTELLIGENCE_SWEEP_REQUIRED" if projection_ready
+            else "HOLD_EXTERNAL_INTELLIGENCE_REQUIRED"
+        ),
     }
     return pd.DataFrame([row])
 
@@ -218,15 +241,20 @@ def write_framework_packet(path: str | Path, context: pd.DataFrame, summary: pd.
         "",
         "## Projection Context",
     ]
-    if row.get("framework_ready"):
+    if row.get("projection_ready"):
         lines += [
             f"- Target starter projected total: {row.get('target_starter_projected_total')}",
             f"- Opponent starter projected total: {row.get('opponent_starter_projected_total')}",
             f"- Starter spread (target - opponent): {row.get('starter_projected_spread_target_minus_opp')}",
         ]
+        if not row.get("framework_ready"):
+            lines += [
+                "- Projection layer is populated, but the current live intelligence sweep is still required.",
+                "- CPI, WUS, FLEX, Ecosystem Confidence, and final lineup construction remain on HOLD until role/environment validation is complete.",
+            ]
     else:
         lines += [
-            "- Projection/enrichment adapter is not sufficiently populated.",
+            "- Projection adapter is not sufficiently populated.",
             "- CPI, WUS, FLEX, Ecosystem Confidence, and final lineup construction must remain on HOLD.",
         ]
 

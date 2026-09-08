@@ -15,6 +15,7 @@ class SleeperClient:
     """
 
     BASE_URL = "https://api.sleeper.app/v1"
+    STATS_URL = "https://api.sleeper.com"
 
     def __init__(self, timeout: int = 20, fixture_dir: str | Path | None = None):
         self.timeout = timeout
@@ -56,3 +57,20 @@ class SleeperClient:
     def players_nfl(self):
         # Sleeper recommends caching this large endpoint rather than repeatedly fetching it.
         return self._get("/players/nfl", "players_nfl.json")
+
+    def weekly_projections(self, season: str | int, week: int):
+        """Fetch Sleeper weekly projections from the separate stats/projection host.
+
+        This endpoint is widely used by Sleeper clients but is not part of the
+        documented core league API. Failure is handled as non-fatal enrichment loss.
+        """
+        if self.fixture_dir:
+            file = self.fixture_dir / f"projections_week_{week}.json"
+            if not file.exists():
+                return {}
+            with file.open("r", encoding="utf-8") as f:
+                return json.load(f)
+        url = f"{self.STATS_URL}/projections/nfl/{season}/{week}"
+        r = self.session.get(url, params={"season_type": "regular"}, timeout=self.timeout)
+        r.raise_for_status()
+        return r.json()

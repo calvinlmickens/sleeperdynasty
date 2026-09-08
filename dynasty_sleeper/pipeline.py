@@ -13,6 +13,7 @@ from .config import DEFAULT_CONFIG, LeagueConfig
 from .normalize import normalize_league_state, normalize_transactions
 from .reconcile import reconcile_snapshot, critical_failures, reconcile_roster_delta
 from .matchup import load_enrichment, build_weekly_matchup_context, build_weekly_matchup_summary, write_framework_packet
+from .enrichment import build_auto_player_week_context
 
 
 def merge_transaction_master(master_path: Path, current: pd.DataFrame) -> pd.DataFrame:
@@ -84,6 +85,18 @@ def run_refresh(
     traded_picks = client.traded_picks(config.league_id)
     players = client.players_nfl() if pull_players else {}
 
+    projection_payload: Any = {}
+    projection_fetch_status = "NOT_ATTEMPTED"
+    projection_fetch_error: str | None = None
+    if enrichment_file is None:
+        try:
+            projection_payload = client.weekly_projections(league.get("season") or 2026, week)
+            projection_fetch_status = "PASS"
+        except Exception as exc:
+            # Projection availability must never invalidate otherwise trusted league state.
+            projection_fetch_status = "FAIL_NONFATAL"
+            projection_fetch_error = str(exc)
+
     # Pull season-to-date transaction rounds so a baseline snapshot can be reconciled
     # against any completed move observed in current ownership.
     tx_by_week: dict[int, list[dict[str, Any]]] = {}
@@ -96,6 +109,8 @@ def run_refresh(
     _write_json(raw_dir / f"matchups_week_{week}.json", matchups)
     _write_json(raw_dir / "traded_picks.json", traded_picks)
     _write_json(raw_dir / "players_nfl.json", players)
+    if enrichment_file is None:
+        _write_json(raw_dir / f"projections_week_{week}.json", projection_payload)
     for tx_week, payload in tx_by_week.items():
         _write_json(raw_dir / f"transactions_week_{tx_week}.json", payload)
 
@@ -118,6 +133,7 @@ def run_refresh(
     matchup_context_path = output_dir / "weekly_matchup_context.csv"
     matchup_summary_path = output_dir / "weekly_matchup_summary.csv"
     framework_packet_path = output_dir / "framework_matchup_packet.md"
+    player_week_context_path = output_dir / "player_week_context.csv"
 
     state.to_csv(state_path, index=False)
     summary.to_csv(summary_path, index=False)
@@ -146,7 +162,14 @@ def run_refresh(
         delta_report = pd.DataFrame([{"status": "BASELINE", "detail": "no previous state supplied; current snapshot establishes baseline"}])
     delta_report.to_csv(delta_path, index=False)
 
-    enrichment, enrichment_status = load_enrichment(enrichment_file, week)
+    if enrichment_file:
+        enrichment, enrichment_status = load_enrichment(enrichment_file, week)
+        enrichment_meta = {"status": enrichment_status, "source": "provided_enrichment_file"}
+    else:
+        enrichment, enrichment_meta = build_auto_player_week_context(league, players, projection_payload, week)
+        enrichment_status = "AUTO_LOADED" if enrichment_meta.get("status") == "LOADED" else str(enrichment_meta.get("status"))
+    enrichment.to_csv(player_week_context_path, index=False)
+
     matchup_context, matchup_meta = build_weekly_matchup_context(league, state, target_roster_id, week, enrichment) if target_roster_id is not None else (pd.DataFrame(), {"status": "FAIL", "reason": "target_roster_unresolved"})
     matchup_context.to_csv(matchup_context_path, index=False)
     matchup_summary = build_weekly_matchup_summary(matchup_context, matchup_meta, enrichment_status)
@@ -155,7 +178,7 @@ def run_refresh(
 
     overall_status = "PASS" if not failures and not delta_failures and matchup_meta.get("status") == "PASS" else "FAIL"
     manifest = {
-        "schema_version": "0.5",
+        "schema_version": "0.6",
         "generated_at_utc": pulled_at,
         "overall_status": overall_status,
         "league_id": config.league_id,
@@ -183,12 +206,15 @@ def run_refresh(
         "opponent_roster_id": matchup_meta.get("opponent_roster_id"),
         "opponent_team_name": matchup_meta.get("opponent_team_name"),
         "external_enrichment_status": enrichment_status,
+        "projection_fetch_status": projection_fetch_status,
+        "projection_fetch_error": projection_fetch_error,
+        "projection_enrichment_meta": enrichment_meta,
         "framework_ready": bool(matchup_summary.iloc[0].get("framework_ready", False)) if not matchup_summary.empty else False,
         "framework_gate": matchup_summary.iloc[0].get("framework_gate") if not matchup_summary.empty else "HOLD_MATCHUP_DERIVATION_FAILED",
         "files": {},
     }
 
-    for p in [state_path, summary_path, tx_current_path, tx_master_path, report_path, picks_path, delta_path, matchup_context_path, matchup_summary_path, framework_packet_path]:
+    for p in [state_path, summary_path, tx_current_path, tx_master_path, report_path, picks_path, delta_path, player_week_context_path, matchup_context_path, matchup_summary_path, framework_packet_path]:
         manifest["files"][p.name] = {"sha256": _sha256(p), "bytes": p.stat().st_size}
     _write_json(manifest_path, manifest)
 
@@ -204,6 +230,7 @@ def run_refresh(
         "weekly_matchup_context": matchup_context_path,
         "weekly_matchup_summary": matchup_summary_path,
         "framework_matchup_packet": framework_packet_path,
+        "player_week_context": player_week_context_path,
         "target_roster_id": target_roster_id,
         "critical_failures": failures + (["UNRECONCILED_ROSTER_DELTA"] if delta_failures else []),
     }

@@ -1,46 +1,29 @@
-# Dynasty Sleeper Migration Punchlist — v0.4
+# Dynasty Sleeper Migration Punchlist
 
-## Completed
+## Complete
 - [x] Governance lock: platform-input migration only
-- [x] Sleeper live API health check
-- [x] Live league identity validation
-- [x] 10-user / 10-roster validation
-- [x] 270-player ownership baseline validation
-- [x] Stable RuffRyders Reloaded roster ID resolution
-- [x] Live matchup pull
-- [x] Transaction normalization
-- [x] First known-good Sleeper baseline
-- [x] Google OAuth authentication
-- [x] App-owned My Drive folder creation
-- [x] Configured Drive folder ID read/write test
-- [x] Google Drive persistence helper
-- [x] Last-known-good overwrite protection
-- [x] Prior baseline download before refresh
-- [x] Roster-delta vs transaction reconciliation hook
-
-## Immediate validation
-- [ ] Run 1: establish Drive-backed `latest/` baseline
-- [ ] Confirm six persistent files appear in Drive
-- [ ] Confirm manifest `overall_status: PASS`
-- [ ] Confirm manifest `baseline_status: ESTABLISHED_THIS_RUN`
-- [ ] Run 2: download and compare prior Drive baseline
-- [ ] Confirm `baseline_status: COMPARED_TO_PREVIOUS`
-- [ ] Confirm no unexplained ownership drift
+- [x] Live Sleeper connectivity via GitHub Actions
+- [x] Canonical Sleeper league / roster / owner / player keys
+- [x] 10-team / 270-player live reconciliation
+- [x] RuffRyders Reloaded stable roster ID resolution
+- [x] Persistent Google Drive known-good baseline
+- [x] Snapshot-to-snapshot roster drift protection
+- [x] Transaction-vs-ownership reconciliation
+- [x] Weekly matchup derivation
+- [x] Compact framework matchup packet
+- [x] Automatic weekly projection adapter
+- [x] Directional league-scoring projection calculation
+- [x] Projection endpoint failure degrades without corrupting league-state truth
+- [x] `player_week_context.csv` persisted to Drive
 
 ## Next
-- [ ] Registry-impact classification for material opponent changes
-- [ ] Compact waiver engine
-- [ ] Projection/external-intelligence adapter
-- [ ] Framework matchup packet generation
-- [ ] Schedule production refresh cadence
-- [ ] Retire ESPN current-state truth after final migration validation
-
-## Phase 3 — Framework input derivation
-- [x] Derive weekly matchup identity from validated Sleeper state
-- [x] Derive starter/bench/slot context for target and opponent
-- [x] Add canonical external enrichment adapter schema
-- [x] Add framework readiness gate
-- [x] Generate structural framework matchup packet
-- [ ] Select/live-test external projection source
-- [ ] Attach fresh injury/practice/role/ecosystem/Vegas/weather enrichment
-- [ ] Open framework gate only after required enrichment coverage passes
+- [ ] Live external intelligence sweep integration / attestation
+- [ ] Vegas total and team-total provider
+- [ ] Weather provider for decision-relevant outdoor games
+- [ ] Role/depth-chart/usage-change intelligence attachment
+- [ ] Ecosystem Confidence update attachment
+- [ ] Opponent Registry material-change classifier
+- [ ] Compact waiver-watch engine
+- [ ] Transaction intelligence summary in framework packet
+- [ ] Production schedule / alert policy
+- [ ] Parallel final validation then retire stale ESPN current-state files
