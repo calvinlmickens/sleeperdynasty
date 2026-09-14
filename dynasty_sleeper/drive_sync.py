@@ -1,4 +1,5 @@
-from __future__ import annotations
+﻿from __future__ import annotations
+
 
 import argparse
 import json
@@ -8,12 +9,16 @@ import sys
 from pathlib import Path
 from typing import Iterable
 
+
 import requests
+
 
 DRIVE_API = "https://www.googleapis.com/drive/v3"
 DRIVE_UPLOAD_API = "https://www.googleapis.com/upload/drive/v3"
 FOLDER_MIME = "application/vnd.google-apps.folder"
 LATEST_FOLDER_NAME = "latest"
+FINAL_SNAPSHOT_FOLDER_NAME = "final_snapshots"
+FINAL_SNAPSHOT_GLOB = "week_*_final_snapshot.json"
 PERSISTENT_FILES = [
     "manifest.json",
     "league_state_current.csv",
@@ -29,6 +34,8 @@ PERSISTENT_FILES = [
 DOWNLOAD_FILES = PERSISTENT_FILES
 
 
+
+
 def _credentials() -> tuple[str, str, str, str]:
     required = [
         "GOOGLE_OAUTH_CLIENT_ID",
@@ -40,6 +47,8 @@ def _credentials() -> tuple[str, str, str, str]:
     if missing:
         raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
     return tuple(os.environ[k] for k in required)  # type: ignore[return-value]
+
+
 
 
 def _access_token() -> tuple[str, str]:
@@ -59,11 +68,15 @@ def _access_token() -> tuple[str, str]:
     return resp.json()["access_token"], root_folder_id
 
 
+
+
 def _headers(token: str, content_type: str | None = None) -> dict[str, str]:
     headers = {"Authorization": f"Bearer {token}"}
     if content_type:
         headers["Content-Type"] = content_type
     return headers
+
+
 
 
 def _verify_root(token: str, root_folder_id: str) -> dict:
@@ -79,6 +92,8 @@ def _verify_root(token: str, root_folder_id: str) -> dict:
     if data.get("mimeType") != FOLDER_MIME or data.get("trashed"):
         raise RuntimeError("Configured GOOGLE_DRIVE_FOLDER_ID is not an active folder")
     return data
+
+
 
 
 def _find_child(token: str, parent_id: str, name: str, mime_type: str | None = None) -> dict | None:
@@ -98,20 +113,30 @@ def _find_child(token: str, parent_id: str, name: str, mime_type: str | None = N
     return files[0] if files else None
 
 
-def _ensure_latest_folder(token: str, root_folder_id: str) -> dict:
-    existing = _find_child(token, root_folder_id, LATEST_FOLDER_NAME, FOLDER_MIME)
+
+
+def _ensure_folder(token: str, root_folder_id: str, folder_name: str) -> dict:
+    existing = _find_child(token, root_folder_id, folder_name, FOLDER_MIME)
     if existing:
         return existing
     resp = requests.post(
         f"{DRIVE_API}/files",
         headers=_headers(token, "application/json"),
-        json={"name": LATEST_FOLDER_NAME, "mimeType": FOLDER_MIME, "parents": [root_folder_id]},
+        json={"name": folder_name, "mimeType": FOLDER_MIME, "parents": [root_folder_id]},
         params={"fields": "id,name,mimeType"},
         timeout=30,
     )
     if resp.status_code not in (200, 201):
-        raise RuntimeError(f"Could not create latest folder ({resp.status_code}): {resp.text}")
+        raise RuntimeError(f"Could not create {folder_name} folder ({resp.status_code}): {resp.text}")
     return resp.json()
+
+
+
+
+def _ensure_latest_folder(token: str, root_folder_id: str) -> dict:
+    return _ensure_folder(token, root_folder_id, LATEST_FOLDER_NAME)
+
+
 
 
 def download_latest(destination: str | Path, filenames: Iterable[str] = DOWNLOAD_FILES) -> dict:
@@ -147,6 +172,8 @@ def download_latest(destination: str | Path, filenames: Iterable[str] = DOWNLOAD
     }
 
 
+
+
 def _upload_new(token: str, folder_id: str, local_path: Path) -> dict:
     mime = mimetypes.guess_type(local_path.name)[0] or "application/octet-stream"
     boundary = "dynasty_sleeper_boundary"
@@ -172,6 +199,8 @@ def _upload_new(token: str, folder_id: str, local_path: Path) -> dict:
     return resp.json()
 
 
+
+
 def _update_existing(token: str, file_id: str, local_path: Path) -> dict:
     mime = mimetypes.guess_type(local_path.name)[0] or "application/octet-stream"
     resp = requests.patch(
@@ -186,11 +215,14 @@ def _update_existing(token: str, file_id: str, local_path: Path) -> dict:
     return resp.json()
 
 
+
+
 def upload_latest(source: str | Path, filenames: Iterable[str] = PERSISTENT_FILES) -> dict:
     token, root_folder_id = _access_token()
     root = _verify_root(token, root_folder_id)
     latest = _ensure_latest_folder(token, root_folder_id)
     source = Path(source)
+
 
     manifest_path = source / "manifest.json"
     if not manifest_path.exists():
@@ -199,6 +231,7 @@ def upload_latest(source: str | Path, filenames: Iterable[str] = PERSISTENT_FILE
     if manifest.get("overall_status") != "PASS":
         raise RuntimeError("manifest overall_status is not PASS; refusing to overwrite last known-good baseline")
 
+
     uploaded: list[dict] = []
     for name in filenames:
         local_path = source / name
@@ -206,16 +239,37 @@ def upload_latest(source: str | Path, filenames: Iterable[str] = PERSISTENT_FILE
             raise RuntimeError(f"Required persistent file missing: {name}")
         existing = _find_child(token, latest["id"], name)
         result = _update_existing(token, existing["id"], local_path) if existing else _upload_new(token, latest["id"], local_path)
-        uploaded.append({"name": name, "id": result.get("id"), "mode": "updated" if existing else "created"})
+        uploaded.append({"name": name, "id": result.get("id"), "mode": "updated" if existing else "created", "folder": LATEST_FOLDER_NAME})
+
+
+    final_snapshots = sorted(source.glob(FINAL_SNAPSHOT_GLOB))
+    final_snapshot_folder = None
+    if final_snapshots:
+        final_snapshot_folder = _ensure_folder(token, root_folder_id, FINAL_SNAPSHOT_FOLDER_NAME)
+        for local_path in final_snapshots:
+            existing = _find_child(token, final_snapshot_folder["id"], local_path.name)
+            result = _update_existing(token, existing["id"], local_path) if existing else _upload_new(token, final_snapshot_folder["id"], local_path)
+            uploaded.append(
+                {
+                    "name": local_path.name,
+                    "id": result.get("id"),
+                    "mode": "updated" if existing else "created",
+                    "folder": FINAL_SNAPSHOT_FOLDER_NAME,
+                }
+            )
+
 
     return {
         "status": "PASS",
         "drive_root_name": root.get("name"),
         "latest_folder_id": latest["id"],
+        "final_snapshot_folder_id": final_snapshot_folder["id"] if final_snapshot_folder else None,
         "uploaded": uploaded,
         "baseline_status": manifest.get("baseline_status"),
         "generated_at_utc": manifest.get("generated_at_utc"),
     }
+
+
 
 
 def main() -> None:
@@ -227,12 +281,15 @@ def main() -> None:
     u.add_argument("--source", default="output")
     args = parser.parse_args()
 
+
     try:
         result = download_latest(args.dest) if args.command == "download" else upload_latest(args.source)
         print(json.dumps(result, indent=2))
     except Exception as exc:
         print(json.dumps({"status": "FAIL", "error": str(exc)}, indent=2))
         raise SystemExit(2)
+
+
 
 
 if __name__ == "__main__":

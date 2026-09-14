@@ -1,4 +1,5 @@
-from __future__ import annotations
+﻿from __future__ import annotations
+
 
 import hashlib
 import json
@@ -6,7 +7,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+
 import pandas as pd
+
 
 from .client import SleeperClient
 from .config import DEFAULT_CONFIG, LeagueConfig
@@ -14,6 +17,8 @@ from .normalize import normalize_league_state, normalize_transactions
 from .reconcile import reconcile_snapshot, critical_failures, reconcile_roster_delta
 from .matchup import load_enrichment, build_weekly_matchup_context, build_weekly_matchup_summary, write_framework_packet
 from .enrichment import build_auto_player_week_context
+
+
 
 
 def merge_transaction_master(master_path: Path, current: pd.DataFrame) -> pd.DataFrame:
@@ -28,10 +33,14 @@ def merge_transaction_master(master_path: Path, current: pd.DataFrame) -> pd.Dat
     return combined.drop_duplicates(subset=[k for k in keys if k in combined.columns], keep="last")
 
 
+
+
 def _write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
+
+
 
 
 def _sha256(path: Path) -> str:
@@ -40,6 +49,8 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: f.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
 
 
 def _roster_summary(state: pd.DataFrame) -> pd.DataFrame:
@@ -53,6 +64,8 @@ def _roster_summary(state: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+
+
 def _find_target_roster(summary: pd.DataFrame, target_team_name: str) -> int | None:
     if summary.empty or not target_team_name:
         return None
@@ -60,6 +73,143 @@ def _find_target_roster(summary: pd.DataFrame, target_team_name: str) -> int | N
     if len(exact) == 1:
         return int(exact.iloc[0]["roster_id"])
     return None
+
+
+
+
+
+
+def _number_or_none(value: Any) -> float | None:
+    if value is None or pd.isna(value):
+        return None
+    try:
+        return round(float(value), 2)
+    except (TypeError, ValueError):
+        return None
+
+
+
+
+def _build_final_week_snapshot(
+    *,
+    league: dict[str, Any],
+    week: int,
+    pulled_at: str,
+    matchups: list[dict[str, Any]],
+    matchup_meta: dict[str, Any],
+    pregame_context_path: str | Path,
+) -> dict[str, Any]:
+    """Join final Sleeper scoring to the last pregame lineup/projection context."""
+    pregame_path = Path(pregame_context_path)
+    if not pregame_path.exists() or pregame_path.stat().st_size == 0:
+        raise RuntimeError(f"Pregame matchup context not found: {pregame_path}")
+
+
+    context = pd.read_csv(pregame_path, dtype={"sleeper_player_id": str})
+    if context.empty:
+        raise RuntimeError("Pregame matchup context is empty")
+    context_week = pd.to_numeric(context.get("week"), errors="coerce").dropna().astype(int).unique().tolist()
+    if context_week != [week]:
+        raise RuntimeError(f"Pregame context week mismatch: expected {week}, found {context_week}")
+
+
+    target_roster_id = int(matchup_meta["target_roster_id"])
+    opponent_roster_id = int(matchup_meta["opponent_roster_id"])
+    matchup_by_roster = {
+        int(row["roster_id"]): row
+        for row in matchups
+        if row.get("roster_id") is not None
+    }
+    missing = [rid for rid in (target_roster_id, opponent_roster_id) if rid not in matchup_by_roster]
+    if missing:
+        raise RuntimeError(f"Final Sleeper matchup rows missing for roster IDs: {missing}")
+
+
+    def side_payload(roster_id: int, side: str) -> dict[str, Any]:
+        matchup_row = matchup_by_roster[roster_id]
+        actuals = {
+            str(player_id): _number_or_none(points)
+            for player_id, points in (matchup_row.get("players_points") or {}).items()
+        }
+        rows = context[context["roster_id"].astype(int) == roster_id].copy()
+        rows["_starter_sort"] = pd.to_numeric(rows.get("starter_order"), errors="coerce")
+        rows = rows.sort_values(
+            ["is_starter", "_starter_sort", "player_name"],
+            ascending=[False, True, True],
+            na_position="last",
+        )
+
+
+        players: list[dict[str, Any]] = []
+        for _, row in rows.iterrows():
+            player_id = str(row["sleeper_player_id"])
+            players.append(
+                {
+                    "sleeper_player_id": player_id,
+                    "player_name": row.get("player_name"),
+                    "position": row.get("position"),
+                    "nfl_team": row.get("nfl_team"),
+                    "lineup_slot": row.get("lineup_slot"),
+                    "lineup_status": row.get("lineup_status"),
+                    "is_starter": bool(row.get("is_starter")),
+                    "starter_order": _number_or_none(row.get("starter_order")),
+                    "pregame_projected_points": _number_or_none(row.get("projected_points_numeric")),
+                    "actual_fantasy_points": actuals.get(player_id),
+                }
+            )
+
+
+        starters = [player for player in players if player["is_starter"]]
+        bench = [player for player in players if not player["is_starter"]]
+        starter_actual_total = round(
+            sum(player["actual_fantasy_points"] or 0.0 for player in starters),
+            2,
+        )
+        return {
+            "side": side,
+            "roster_id": roster_id,
+            "team_name": rows["team_name"].iloc[0] if not rows.empty else None,
+            "final_score": _number_or_none(matchup_row.get("points")),
+            "starter_actual_total": starter_actual_total,
+            "starters": starters,
+            "bench": bench,
+        }
+
+
+    target = side_payload(target_roster_id, "TARGET")
+    opponent = side_payload(opponent_roster_id, "OPPONENT")
+    target_score = target["final_score"]
+    opponent_score = opponent["final_score"]
+    result = (
+        "WIN" if target_score is not None and opponent_score is not None and target_score > opponent_score
+        else "LOSS" if target_score is not None and opponent_score is not None and target_score < opponent_score
+        else "TIE" if target_score is not None and opponent_score is not None
+        else "UNKNOWN"
+    )
+
+
+    return {
+        "schema_version": "1.0",
+        "snapshot_type": "FINAL_WEEK",
+        "status": "PASS",
+        "captured_at_utc": pulled_at,
+        "projection_source": "last_pregame_weekly_matchup_context",
+        "projection_captured_at_utc": context["pulled_at_utc"].dropna().iloc[0] if context["pulled_at_utc"].notna().any() else None,
+        "season": str(league.get("season") or ""),
+        "week": week,
+        "league_id": str(league.get("league_id") or ""),
+        "matchup_id": matchup_meta.get("matchup_id"),
+        "result": result,
+        "final_score": {
+            "target": target_score,
+            "opponent": opponent_score,
+            "target_minus_opponent": round(target_score - opponent_score, 2) if target_score is not None and opponent_score is not None else None,
+        },
+        "target": target,
+        "opponent": opponent,
+    }
+
+
 
 
 def run_refresh(
@@ -70,6 +220,8 @@ def run_refresh(
     pull_players: bool = True,
     previous_state: str | Path | None = None,
     enrichment_file: str | Path | None = None,
+    finalize_week: bool = False,
+    pregame_context: str | Path | None = None,
 ) -> dict[str, Path | list[str] | int | None]:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -78,12 +230,14 @@ def run_refresh(
     client = SleeperClient(fixture_dir=fixture_dir)
     pulled_at = datetime.now(timezone.utc).isoformat()
 
+
     league = client.league(config.league_id)
     users = client.users(config.league_id)
     rosters = client.rosters(config.league_id)
     matchups = client.matchups(config.league_id, week)
     traded_picks = client.traded_picks(config.league_id)
     players = client.players_nfl() if pull_players else {}
+
 
     projection_payload: Any = {}
     projection_fetch_status = "NOT_ATTEMPTED"
@@ -97,11 +251,13 @@ def run_refresh(
             projection_fetch_status = "FAIL_NONFATAL"
             projection_fetch_error = str(exc)
 
+
     # Pull season-to-date transaction rounds so a baseline snapshot can be reconciled
     # against any completed move observed in current ownership.
     tx_by_week: dict[int, list[dict[str, Any]]] = {}
     for tx_week in range(1, week + 1):
         tx_by_week[tx_week] = client.transactions(config.league_id, tx_week)
+
 
     _write_json(raw_dir / "league.json", league)
     _write_json(raw_dir / "users.json", users)
@@ -114,6 +270,7 @@ def run_refresh(
     for tx_week, payload in tx_by_week.items():
         _write_json(raw_dir / f"transactions_week_{tx_week}.json", payload)
 
+
     state = normalize_league_state(league, users, rosters, players, matchups, week)
     tx_frames = [normalize_transactions(payload) for payload in tx_by_week.values()]
     tx_current = pd.concat(tx_frames, ignore_index=True) if tx_frames else pd.DataFrame()
@@ -121,6 +278,7 @@ def run_refresh(
     failures = critical_failures(report)
     summary = _roster_summary(state)
     target_roster_id = _find_target_roster(summary, config.target_team_name)
+
 
     state_path = output_dir / "league_state_current.csv"
     summary_path = output_dir / "roster_summary_current.csv"
@@ -134,6 +292,8 @@ def run_refresh(
     matchup_summary_path = output_dir / "weekly_matchup_summary.csv"
     framework_packet_path = output_dir / "framework_matchup_packet.md"
     player_week_context_path = output_dir / "player_week_context.csv"
+    final_snapshot_path = output_dir / f"week_{week}_final_snapshot.json" if finalize_week else None
+
 
     state.to_csv(state_path, index=False)
     summary.to_csv(summary_path, index=False)
@@ -145,6 +305,7 @@ def run_refresh(
     if picks_df.empty:
         picks_df = pd.DataFrame(columns=["season", "round", "roster_id", "previous_owner_id", "owner_id"])
     picks_df.to_csv(picks_path, index=False)
+
 
     baseline_status = "ESTABLISHED_THIS_RUN"
     delta_failures: list[str] = []
@@ -162,6 +323,7 @@ def run_refresh(
         delta_report = pd.DataFrame([{"status": "BASELINE", "detail": "no previous state supplied; current snapshot establishes baseline"}])
     delta_report.to_csv(delta_path, index=False)
 
+
     if enrichment_file:
         enrichment, enrichment_status = load_enrichment(enrichment_file, week)
         enrichment_meta = {"status": enrichment_status, "source": "provided_enrichment_file"}
@@ -170,15 +332,33 @@ def run_refresh(
         enrichment_status = "AUTO_LOADED" if enrichment_meta.get("status") == "LOADED" else str(enrichment_meta.get("status"))
     enrichment.to_csv(player_week_context_path, index=False)
 
+
     matchup_context, matchup_meta = build_weekly_matchup_context(league, state, target_roster_id, week, enrichment) if target_roster_id is not None else (pd.DataFrame(), {"status": "FAIL", "reason": "target_roster_unresolved"})
     matchup_context.to_csv(matchup_context_path, index=False)
     matchup_summary = build_weekly_matchup_summary(matchup_context, matchup_meta, enrichment_status)
     matchup_summary.to_csv(matchup_summary_path, index=False)
     write_framework_packet(framework_packet_path, matchup_context, matchup_summary)
 
+
+    if finalize_week:
+        if matchup_meta.get("status") != "PASS":
+            raise RuntimeError("Cannot finalize week because matchup derivation did not pass")
+        if pregame_context is None:
+            raise RuntimeError("--pregame-context is required when --finalize-week is used")
+        final_snapshot = _build_final_week_snapshot(
+            league=league,
+            week=week,
+            pulled_at=pulled_at,
+            matchups=matchups,
+            matchup_meta=matchup_meta,
+            pregame_context_path=pregame_context,
+        )
+        _write_json(final_snapshot_path, final_snapshot)
+
+
     overall_status = "PASS" if not failures and not delta_failures and matchup_meta.get("status") == "PASS" else "FAIL"
     manifest = {
-        "schema_version": "0.6",
+        "schema_version": "0.7",
         "generated_at_utc": pulled_at,
         "overall_status": overall_status,
         "league_id": config.league_id,
@@ -211,12 +391,18 @@ def run_refresh(
         "projection_enrichment_meta": enrichment_meta,
         "framework_ready": bool(matchup_summary.iloc[0].get("framework_ready", False)) if not matchup_summary.empty else False,
         "framework_gate": matchup_summary.iloc[0].get("framework_gate") if not matchup_summary.empty else "HOLD_MATCHUP_DERIVATION_FAILED",
+        "final_snapshot_status": "PASS" if final_snapshot_path is not None else "NOT_REQUESTED",
         "files": {},
     }
 
-    for p in [state_path, summary_path, tx_current_path, tx_master_path, report_path, picks_path, delta_path, player_week_context_path, matchup_context_path, matchup_summary_path, framework_packet_path]:
+
+    manifest_files = [state_path, summary_path, tx_current_path, tx_master_path, report_path, picks_path, delta_path, player_week_context_path, matchup_context_path, matchup_summary_path, framework_packet_path]
+    if final_snapshot_path is not None:
+        manifest_files.append(final_snapshot_path)
+    for p in manifest_files:
         manifest["files"][p.name] = {"sha256": _sha256(p), "bytes": p.stat().st_size}
     _write_json(manifest_path, manifest)
+
 
     return {
         "league_state": state_path,
@@ -231,6 +417,7 @@ def run_refresh(
         "weekly_matchup_summary": matchup_summary_path,
         "framework_matchup_packet": framework_packet_path,
         "player_week_context": player_week_context_path,
+        "final_week_snapshot": final_snapshot_path,
         "target_roster_id": target_roster_id,
         "critical_failures": failures + (["UNRECONCILED_ROSTER_DELTA"] if delta_failures else []),
     }
