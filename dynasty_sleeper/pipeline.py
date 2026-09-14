@@ -19,6 +19,10 @@ from .matchup import load_enrichment, build_weekly_matchup_context, build_weekly
 from .enrichment import build_auto_player_week_context
 
 
+EXPECTED_LIVE_SCOREBOARD_TEAMS = 10
+EXPECTED_LIVE_SCOREBOARD_MATCHUPS = 5
+
+
 
 
 def merge_transaction_master(master_path: Path, current: pd.DataFrame) -> pd.DataFrame:
@@ -88,6 +92,244 @@ def _number_or_none(value: Any) -> float | None:
         return None
 
 
+
+
+def _fantasy_positions(value: Any) -> set[str]:
+    if isinstance(value, (list, tuple, set)):
+        return {str(item).strip().upper() for item in value if str(item).strip()}
+    if value is None or pd.isna(value):
+        return set()
+    return {item.strip().upper() for item in str(value).split(",") if item.strip()}
+
+
+def _eligible_for_lineup_slot(player_row: pd.Series, lineup_slot: str) -> bool:
+    positions = _fantasy_positions(player_row.get("fantasy_positions"))
+    primary = str(player_row.get("position") or "").strip().upper()
+    if primary:
+        positions.add(primary)
+    slot = str(lineup_slot or "").strip().upper()
+    if slot == "FLEX":
+        return bool(positions.intersection({"RB", "WR", "TE"}))
+    return slot in positions
+
+
+def _top_scoring_player(rows: pd.DataFrame) -> tuple[Any, float | None]:
+    if rows.empty:
+        return None, None
+    eligible = rows.copy()
+    eligible["_points"] = pd.to_numeric(eligible["current_player_points"], errors="coerce")
+    eligible = eligible.dropna(subset=["_points"])
+    if eligible.empty:
+        return None, None
+    top = eligible.sort_values(["_points", "player_name"], ascending=[False, True]).iloc[0]
+    return top.get("player_name"), _number_or_none(top.get("_points"))
+
+
+def _bench_points_left_behind(rows: pd.DataFrame) -> dict[str, Any]:
+    starters = rows[rows["is_starter"] == True].copy()  # noqa: E712
+    bench = rows[rows["is_starter"] == False].copy()  # noqa: E712
+    if starters.empty or bench.empty:
+        return {"flag": False}
+
+    starters["_points"] = pd.to_numeric(starters["current_player_points"], errors="coerce")
+    bench["_points"] = pd.to_numeric(bench["current_player_points"], errors="coerce")
+    best: dict[str, Any] | None = None
+    for _, bench_row in bench.dropna(subset=["_points"]).iterrows():
+        for _, starter_row in starters.dropna(subset=["_points"]).iterrows():
+            if not _eligible_for_lineup_slot(bench_row, str(starter_row.get("lineup_slot") or "")):
+                continue
+            difference = float(bench_row["_points"]) - float(starter_row["_points"])
+            if difference <= 0:
+                continue
+            candidate = {
+                "flag": True,
+                "bench_player": bench_row.get("player_name"),
+                "bench_points": _number_or_none(bench_row.get("_points")),
+                "starter_player": starter_row.get("player_name"),
+                "starter_points": _number_or_none(starter_row.get("_points")),
+                "lineup_slot": starter_row.get("lineup_slot"),
+                "points_difference": round(difference, 2),
+            }
+            if best is None or candidate["points_difference"] > best["points_difference"]:
+                best = candidate
+    return best or {"flag": False}
+
+
+def _build_live_week_outputs(
+    *,
+    league: dict[str, Any],
+    week: int,
+    pulled_at: str,
+    state: pd.DataFrame,
+    matchups: list[dict[str, Any]],
+    enrichment: pd.DataFrame,
+    finalize_week: bool,
+) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+    """Build a league-wide provisional scoreboard and rostered-player live score detail."""
+    team_lookup = (
+        state[["roster_id", "team_name"]]
+        .drop_duplicates(subset=["roster_id"])
+        .set_index("roster_id")["team_name"]
+        .to_dict()
+        if not state.empty
+        else {}
+    )
+    matchup_by_roster = {
+        int(row["roster_id"]): row
+        for row in matchups
+        if row.get("roster_id") is not None
+    }
+    matchup_groups: dict[int, list[int]] = {}
+    for roster_id, row in matchup_by_roster.items():
+        if row.get("matchup_id") is None:
+            continue
+        matchup_groups.setdefault(int(row["matchup_id"]), []).append(roster_id)
+
+    opponent_by_roster: dict[int, int] = {}
+    for roster_ids in matchup_groups.values():
+        if len(roster_ids) == 2:
+            opponent_by_roster[roster_ids[0]] = roster_ids[1]
+            opponent_by_roster[roster_ids[1]] = roster_ids[0]
+
+    starter_slots = [
+        str(slot)
+        for slot in (league.get("roster_positions") or [])
+        if str(slot).upper() not in {"BN", "IR", "TAXI"}
+    ]
+    projection_lookup: dict[str, float | None] = {}
+    if not enrichment.empty and "sleeper_player_id" in enrichment.columns:
+        projection_column = "projected_points" if "projected_points" in enrichment.columns else None
+        if projection_column:
+            projection_lookup = {
+                str(row["sleeper_player_id"]): _number_or_none(row.get(projection_column))
+                for _, row in enrichment.iterrows()
+            }
+
+    player_rows: list[dict[str, Any]] = []
+    for _, row in state.iterrows():
+        roster_id = int(row["roster_id"])
+        matchup_row = matchup_by_roster.get(roster_id, {})
+        opponent_roster_id = opponent_by_roster.get(roster_id)
+        player_id = str(row["sleeper_player_id"])
+        actual_points = (matchup_row.get("players_points") or {}).get(player_id)
+        is_starter = bool(row.get("is_starter"))
+        starter_order = _number_or_none(row.get("starter_order"))
+        lineup_slot = "BN"
+        if is_starter and starter_order is not None:
+            starter_index = int(starter_order)
+            lineup_slot = starter_slots[starter_index] if starter_index < len(starter_slots) else "STARTER"
+        player_rows.append(
+            {
+                "season": str(league.get("season") or ""),
+                "week": week,
+                "matchup_id": matchup_row.get("matchup_id"),
+                "team_name": team_lookup.get(roster_id),
+                "roster_id": roster_id,
+                "opponent_team_name": team_lookup.get(opponent_roster_id),
+                "opponent_roster_id": opponent_roster_id,
+                "sleeper_player_id": player_id,
+                "player_name": row.get("player_name"),
+                "position": row.get("position"),
+                "fantasy_positions": row.get("fantasy_positions"),
+                "nfl_team": row.get("nfl_team"),
+                "lineup_slot": lineup_slot,
+                "lineup_status": "Starter" if is_starter else "Bench",
+                "is_starter": is_starter,
+                "starter_order": starter_order,
+                "current_player_points": _number_or_none(actual_points),
+                "projected_points": projection_lookup.get(player_id),
+                "status": row.get("status"),
+                "injury_status": row.get("injury_status"),
+                "last_refreshed_utc": pulled_at,
+            }
+        )
+    player_scores = pd.DataFrame(player_rows)
+    if not player_scores.empty:
+        player_scores = player_scores.sort_values(
+            ["matchup_id", "roster_id", "is_starter", "starter_order", "player_name"],
+            ascending=[True, True, False, True, True],
+            na_position="last",
+        )
+
+    matchup_status = "FINAL" if finalize_week else "PROVISIONAL"
+    scoreboard_rows: list[dict[str, Any]] = []
+    for roster_id, matchup_row in sorted(
+        matchup_by_roster.items(),
+        key=lambda item: (item[1].get("matchup_id") or 0, item[0]),
+    ):
+        opponent_roster_id = opponent_by_roster.get(roster_id)
+        opponent_row = matchup_by_roster.get(opponent_roster_id, {})
+        team_players = player_scores[player_scores["roster_id"] == roster_id] if not player_scores.empty else pd.DataFrame()
+        top_starter, top_starter_points = _top_scoring_player(
+            team_players[team_players["is_starter"] == True] if not team_players.empty else pd.DataFrame()  # noqa: E712
+        )
+        top_bench, top_bench_points = _top_scoring_player(
+            team_players[team_players["is_starter"] == False] if not team_players.empty else pd.DataFrame()  # noqa: E712
+        )
+        bench_mistake = _bench_points_left_behind(team_players) if not team_players.empty else {"flag": False}
+        current_points = _number_or_none(matchup_row.get("points"))
+        opponent_points = _number_or_none(opponent_row.get("points"))
+        scoreboard_rows.append(
+            {
+                "season": str(league.get("season") or ""),
+                "week": week,
+                "matchup_id": matchup_row.get("matchup_id"),
+                "team_name": team_lookup.get(roster_id),
+                "roster_id": roster_id,
+                "current_points": current_points,
+                "opponent_team_name": team_lookup.get(opponent_roster_id),
+                "opponent_roster_id": opponent_roster_id,
+                "opponent_current_points": opponent_points,
+                "matchup_margin": round(current_points - opponent_points, 2) if current_points is not None and opponent_points is not None else None,
+                "matchup_status": matchup_status,
+                "is_live": False if finalize_week else None,
+                "matchup_status_basis": "finalize_run" if finalize_week else "GAME_COMPLETION_NOT_AVAILABLE_FROM_SLEEPER_MATCHUPS",
+                "remaining_players_count": None,
+                "completed_players_count": None,
+                "completion_counts_status": "NOT_RELIABLY_DERIVABLE_FROM_SLEEPER_MATCHUPS",
+                "highest_scoring_starter": top_starter,
+                "highest_scoring_starter_points": top_starter_points,
+                "highest_scoring_bench_player": top_bench,
+                "highest_scoring_bench_points": top_bench_points,
+                "bench_outscoring_eligible_starter_flag": bool(bench_mistake.get("flag")),
+                "bench_points_left_behind_flag": bool(bench_mistake.get("flag")) if finalize_week else False,
+                "bench_comparison_status": "FINAL" if finalize_week else "PROVISIONAL_GAME_COMPLETION_UNKNOWN",
+                "bench_player_left_out": bench_mistake.get("bench_player"),
+                "bench_player_points": bench_mistake.get("bench_points"),
+                "outscored_starter": bench_mistake.get("starter_player"),
+                "outscored_starter_points": bench_mistake.get("starter_points"),
+                "eligible_lineup_slot": bench_mistake.get("lineup_slot"),
+                "bench_points_difference": bench_mistake.get("points_difference"),
+                "last_refreshed_utc": pulled_at,
+            }
+        )
+    scoreboard = pd.DataFrame(scoreboard_rows)
+
+    errors: list[str] = []
+    team_count = int(scoreboard["roster_id"].nunique()) if not scoreboard.empty else 0
+    matchup_count = int(scoreboard["matchup_id"].nunique()) if not scoreboard.empty else 0
+    if team_count != EXPECTED_LIVE_SCOREBOARD_TEAMS:
+        errors.append(f"expected {EXPECTED_LIVE_SCOREBOARD_TEAMS} teams, found {team_count}")
+    if matchup_count != EXPECTED_LIVE_SCOREBOARD_MATCHUPS:
+        errors.append(f"expected {EXPECTED_LIVE_SCOREBOARD_MATCHUPS} matchups, found {matchup_count}")
+    if not scoreboard.empty:
+        invalid_matchups = scoreboard.groupby("matchup_id", dropna=False)["roster_id"].nunique()
+        invalid_matchups = invalid_matchups[invalid_matchups != 2]
+        if not invalid_matchups.empty:
+            errors.append(f"matchups without exactly two teams: {invalid_matchups.index.tolist()}")
+    player_team_count = int(player_scores["roster_id"].nunique()) if not player_scores.empty else 0
+    if player_team_count != EXPECTED_LIVE_SCOREBOARD_TEAMS:
+        errors.append(f"player detail expected {EXPECTED_LIVE_SCOREBOARD_TEAMS} teams, found {player_team_count}")
+
+    validation = {
+        "status": "PASS" if not errors else "FAIL",
+        "errors": errors,
+        "team_rows": int(len(scoreboard)),
+        "unique_teams": team_count,
+        "unique_matchups": matchup_count,
+        "player_rows": int(len(player_scores)),
+    }
+    return scoreboard, player_scores, validation
 
 
 def _build_final_week_snapshot(
@@ -292,6 +534,8 @@ def run_refresh(
     matchup_summary_path = output_dir / "weekly_matchup_summary.csv"
     framework_packet_path = output_dir / "framework_matchup_packet.md"
     player_week_context_path = output_dir / "player_week_context.csv"
+    live_scoreboard_path = output_dir / "league_live_scoreboard.csv"
+    live_player_scores_path = output_dir / "league_live_player_scores.csv"
     final_snapshot_path = output_dir / f"week_{week}_final_snapshot.json" if finalize_week else None
 
 
@@ -333,6 +577,19 @@ def run_refresh(
     enrichment.to_csv(player_week_context_path, index=False)
 
 
+    live_scoreboard, live_player_scores, live_scoreboard_validation = _build_live_week_outputs(
+        league=league,
+        week=week,
+        pulled_at=pulled_at,
+        state=state,
+        matchups=matchups,
+        enrichment=enrichment,
+        finalize_week=finalize_week,
+    )
+    live_scoreboard.to_csv(live_scoreboard_path, index=False)
+    live_player_scores.to_csv(live_player_scores_path, index=False)
+
+
     matchup_context, matchup_meta = build_weekly_matchup_context(league, state, target_roster_id, week, enrichment) if target_roster_id is not None else (pd.DataFrame(), {"status": "FAIL", "reason": "target_roster_unresolved"})
     matchup_context.to_csv(matchup_context_path, index=False)
     matchup_summary = build_weekly_matchup_summary(matchup_context, matchup_meta, enrichment_status)
@@ -356,9 +613,16 @@ def run_refresh(
         _write_json(final_snapshot_path, final_snapshot)
 
 
-    overall_status = "PASS" if not failures and not delta_failures and matchup_meta.get("status") == "PASS" else "FAIL"
+    overall_status = (
+        "PASS"
+        if not failures
+        and not delta_failures
+        and matchup_meta.get("status") == "PASS"
+        and live_scoreboard_validation["status"] == "PASS"
+        else "FAIL"
+    )
     manifest = {
-        "schema_version": "0.7",
+        "schema_version": "0.8",
         "generated_at_utc": pulled_at,
         "overall_status": overall_status,
         "league_id": config.league_id,
@@ -379,6 +643,10 @@ def run_refresh(
             "transaction_action_rows": int(len(tx_current)),
             "traded_picks": len(traded_picks),
             "player_dictionary": len(players),
+            "live_scoreboard_team_rows": live_scoreboard_validation["team_rows"],
+            "live_scoreboard_unique_teams": live_scoreboard_validation["unique_teams"],
+            "live_scoreboard_unique_matchups": live_scoreboard_validation["unique_matchups"],
+            "live_player_score_rows": live_scoreboard_validation["player_rows"],
         },
         "critical_reconciliation_failures": failures,
         "unreconciled_roster_delta_player_ids": delta_failures,
@@ -391,12 +659,14 @@ def run_refresh(
         "projection_enrichment_meta": enrichment_meta,
         "framework_ready": bool(matchup_summary.iloc[0].get("framework_ready", False)) if not matchup_summary.empty else False,
         "framework_gate": matchup_summary.iloc[0].get("framework_gate") if not matchup_summary.empty else "HOLD_MATCHUP_DERIVATION_FAILED",
+        "live_scoreboard_status": live_scoreboard_validation["status"],
+        "live_scoreboard_validation_errors": live_scoreboard_validation["errors"],
         "final_snapshot_status": "PASS" if final_snapshot_path is not None else "NOT_REQUESTED",
         "files": {},
     }
 
 
-    manifest_files = [state_path, summary_path, tx_current_path, tx_master_path, report_path, picks_path, delta_path, player_week_context_path, matchup_context_path, matchup_summary_path, framework_packet_path]
+    manifest_files = [state_path, summary_path, tx_current_path, tx_master_path, report_path, picks_path, delta_path, player_week_context_path, matchup_context_path, matchup_summary_path, framework_packet_path, live_scoreboard_path, live_player_scores_path]
     if final_snapshot_path is not None:
         manifest_files.append(final_snapshot_path)
     for p in manifest_files:
@@ -417,7 +687,11 @@ def run_refresh(
         "weekly_matchup_summary": matchup_summary_path,
         "framework_matchup_packet": framework_packet_path,
         "player_week_context": player_week_context_path,
+        "league_live_scoreboard": live_scoreboard_path,
+        "league_live_player_scores": live_player_scores_path,
         "final_week_snapshot": final_snapshot_path,
         "target_roster_id": target_roster_id,
-        "critical_failures": failures + (["UNRECONCILED_ROSTER_DELTA"] if delta_failures else []),
+        "critical_failures": failures
+        + (["UNRECONCILED_ROSTER_DELTA"] if delta_failures else [])
+        + (["LIVE_SCOREBOARD_VALIDATION_FAILED"] if live_scoreboard_validation["status"] != "PASS" else []),
     }
