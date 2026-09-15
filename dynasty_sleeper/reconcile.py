@@ -66,6 +66,73 @@ def reconcile_snapshot(
         bad = {mid: rids for mid, rids in groups.items() if mid is not None and len(rids) != 2}
         add("matchup_pairing", not bad, f"bad_matchups={bad}")
 
+        # Weekly starter truth comes from the matchup endpoint, not the roster endpoint.
+        # The roster endpoint can already reflect next week's lineup. Validate both
+        # starter identity and starter_order so lineup-slot mapping cannot silently drift.
+        starter_assignment_failures: list[dict[str, Any]] = []
+        matchup_membership_failures: list[dict[str, Any]] = []
+        duplicate_matchup_starters: list[dict[str, Any]] = []
+        fallback_sources: list[int] = []
+
+        for m in matchups:
+            rid = int(m["roster_id"])
+            raw_starters = [str(x) for x in (m.get("starters") or []) if x is not None]
+            expected = {
+                player_id: idx
+                for idx, player_id in enumerate(raw_starters)
+                if player_id and player_id != "0"
+            }
+            expected_ids = list(expected)
+            if len(expected_ids) != len(set(expected_ids)):
+                duplicate_matchup_starters.append({"roster_id": rid, "starters": expected_ids})
+
+            matchup_players = {str(x) for x in (m.get("players") or []) if x is not None}
+            missing_from_matchup_players = [pid for pid in expected_ids if pid not in matchup_players]
+            if missing_from_matchup_players:
+                matchup_membership_failures.append({"roster_id": rid, "missing": missing_from_matchup_players})
+
+            rows = state[state["roster_id"].astype(int) == rid].copy()
+            generated: dict[str, int] = {}
+            for _, row in rows[rows["is_starter"] == True].iterrows():  # noqa: E712
+                pid = str(row["sleeper_player_id"])
+                order = pd.to_numeric(pd.Series([row.get("starter_order")]), errors="coerce").iloc[0]
+                if pd.isna(order):
+                    generated[pid] = -1
+                else:
+                    generated[pid] = int(order)
+
+            source_values = set(rows.get("starter_assignment_source", pd.Series(dtype=str)).dropna().astype(str).tolist())
+            if source_values and source_values != {"WEEKLY_MATCHUP_STARTERS"}:
+                fallback_sources.append(rid)
+
+            if generated != expected:
+                starter_assignment_failures.append({
+                    "roster_id": rid,
+                    "expected": expected,
+                    "generated": generated,
+                })
+
+        add(
+            "matchup_starters_in_matchup_players",
+            not matchup_membership_failures,
+            f"exceptions={matchup_membership_failures}",
+        )
+        add(
+            "matchup_starter_duplicates",
+            not duplicate_matchup_starters,
+            f"exceptions={duplicate_matchup_starters}",
+        )
+        add(
+            "matchup_starter_assignment",
+            not starter_assignment_failures,
+            f"exceptions={starter_assignment_failures}",
+        )
+        add(
+            "matchup_starter_source",
+            not fallback_sources,
+            f"fallback_roster_ids={fallback_sources}",
+        )
+
     return pd.DataFrame([asdict(c) for c in checks])
 
 
