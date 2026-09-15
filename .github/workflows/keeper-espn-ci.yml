@@ -1,0 +1,26 @@
+name: Keeper ESPN Phase 1 CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'keeper_espn/**'
+      - 'tests/keeper_fixtures/**'
+      - 'tests/test_keeper_espn_phase1.py'
+      - 'pyproject.toml'
+      - '.github/workflows/keeper-espn-ci.yml'
+
+jobs:
+  phase1-fixture-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install package
+        run: python -m pip install -e .
+      - name: Compile Keeper package
+        run: python -m compileall -q keeper_espn
+      - name: Run Keeper Phase 1 fixture test
+        run: python -m unittest tests.test_keeper_espn_phase1 -v
