@@ -1,0 +1,62 @@
+{
+  "id": 424242,
+  "seasonId": 2026,
+  "scoringPeriodId": 2,
+  "settings": {
+    "name": "Keeper Test League",
+    "rosterSettings": {
+      "lineupSlotCounts": {
+        "0": 1,
+        "2": 2,
+        "4": 2,
+        "6": 1,
+        "16": 1,
+        "17": 1,
+        "20": 2,
+        "21": 2,
+        "23": 1
+      }
+    },
+    "scheduleSettings": {"matchupPeriodCount": 14},
+    "acquisitionSettings": {"waiverProcessHour": 4},
+    "scoringSettings": {
+      "scoringItems": [
+        {"statId": 4, "points": 6.0}
+      ]
+    }
+  },
+  "teams": [
+    {
+      "id": 1,
+      "location": "Taylor",
+      "nickname": "Made",
+      "waiverRank": 5,
+      "playoffSeed": 3,
+      "record": {"overall": {"wins": 1, "losses": 0, "ties": 0, "pointsFor": 145.5, "pointsAgainst": 121.2}},
+      "roster": {
+        "entries": [
+          {"lineupSlotId": 0, "playerPoolEntry": {"player": {"id": 101, "fullName": "Test Quarterback", "proTeamId": 1, "defaultPositionId": 1, "injuryStatus": "ACTIVE"}}},
+          {"lineupSlotId": 2, "playerPoolEntry": {"player": {"id": 102, "fullName": "Test Runner", "proTeamId": 2, "defaultPositionId": 2, "injuryStatus": "ACTIVE"}}},
+          {"lineupSlotId": 4, "playerPoolEntry": {"player": {"id": 103, "fullName": "Test Receiver", "proTeamId": 3, "defaultPositionId": 3, "injuryStatus": "QUESTIONABLE"}}},
+          {"lineupSlotId": 20, "playerPoolEntry": {"player": {"id": 104, "fullName": "Bench Runner", "proTeamId": 4, "defaultPositionId": 2, "injuryStatus": "ACTIVE"}}}
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "location": "Weekly",
+      "nickname": "Opponent",
+      "waiverRank": 8,
+      "playoffSeed": 7,
+      "record": {"overall": {"wins": 0, "losses": 1, "ties": 0, "pointsFor": 118.0, "pointsAgainst": 139.0}},
+      "roster": {"entries": []}
+    }
+  ],
+  "schedule": [
+    {
+      "matchupPeriodId": 2,
+      "home": {"teamId": 1, "totalPoints": 0.0, "totalProjectedPoints": 132.5},
+      "away": {"teamId": 2, "totalPoints": 0.0, "totalProjectedPoints": 127.0}
+    }
+  ]
+}
