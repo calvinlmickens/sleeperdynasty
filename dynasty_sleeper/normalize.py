@@ -13,6 +13,25 @@ def _team_name(user: dict[str, Any] | None, roster_id: int) -> str:
     return metadata.get("team_name") or user.get("display_name") or user.get("username") or f"Roster {roster_id}"
 
 
+def _starter_assignment(
+    roster: dict[str, Any],
+    matchup: dict[str, Any],
+) -> tuple[list[str], str]:
+    """Return the starter array that belongs to the requested week.
+
+    Sleeper's roster endpoint exposes the roster's *current* starters, which can
+    already reflect a later week's lineup.  The weekly matchup endpoint carries the
+    historical starter array for that specific week and is therefore authoritative
+    whenever it is available.
+
+    Keep "0" placeholders in the list so starter_order remains aligned to
+    league.roster_positions even when a lineup slot is empty.
+    """
+    if "starters" in matchup and matchup.get("starters") is not None:
+        return [str(x) for x in (matchup.get("starters") or []) if x is not None], "WEEKLY_MATCHUP_STARTERS"
+    return [str(x) for x in (roster.get("starters") or []) if x is not None], "ROSTER_CURRENT_STARTERS_FALLBACK"
+
+
 def normalize_league_state(
     league: dict[str, Any],
     users: list[dict[str, Any]],
@@ -23,8 +42,10 @@ def normalize_league_state(
 ) -> pd.DataFrame:
     """Create one normalized player-per-roster snapshot.
 
-    Stable keys are league_id, roster_id, sleeper_player_id. Starter/bench state is
-    derived from Sleeper's starter list. Matchup identity is attached by roster_id.
+    Stable keys are league_id, roster_id, sleeper_player_id. When weekly matchup
+    data is supplied, starter/bench state and starter_order come from Sleeper's
+    matchup starter array for the requested week. The current-roster starter array
+    is used only as a fallback when weekly starter data is unavailable.
     """
     users_by_id = {str(u.get("user_id")): u for u in users}
     matchups_by_roster = {int(m["roster_id"]): m for m in (matchups or [])}
@@ -35,10 +56,15 @@ def normalize_league_state(
         roster_id = int(roster["roster_id"])
         owner_id = roster.get("owner_id")
         user = users_by_id.get(str(owner_id)) if owner_id is not None else None
-        starters = [str(x) for x in (roster.get("starters") or []) if x is not None]
-        starter_set = set(starters)
-        roster_players = [str(x) for x in (roster.get("players") or []) if x is not None]
         matchup = matchups_by_roster.get(roster_id, {})
+        starters, starter_source = _starter_assignment(roster, matchup)
+        starter_order_by_id = {
+            player_id: idx
+            for idx, player_id in enumerate(starters)
+            if player_id and player_id != "0"
+        }
+        starter_set = set(starter_order_by_id)
+        roster_players = [str(x) for x in (roster.get("players") or []) if x is not None]
         matchup_id = matchup.get("matchup_id")
 
         for player_id in roster_players:
@@ -64,7 +90,8 @@ def normalize_league_state(
                 "espn_id": p.get("espn_id"),
                 "sportradar_id": p.get("sportradar_id"),
                 "is_starter": player_id in starter_set,
-                "starter_order": starters.index(player_id) if player_id in starter_set else None,
+                "starter_order": starter_order_by_id.get(player_id),
+                "starter_assignment_source": starter_source,
                 "matchup_id": matchup_id,
                 "matchup_points": matchup.get("points"),
                 "waiver_position": (roster.get("settings") or {}).get("waiver_position"),
