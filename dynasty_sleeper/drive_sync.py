@@ -30,6 +30,8 @@ PERSISTENT_FILES = [
     "weekly_matchup_summary.csv",
     "framework_matchup_packet.md",
     "player_week_context.csv",
+    "league_live_scoreboard.csv",
+    "league_live_player_scores.csv",
 ]
 DOWNLOAD_FILES = PERSISTENT_FILES
 
