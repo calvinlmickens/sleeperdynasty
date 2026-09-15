@@ -1,0 +1,35 @@
+name: Keeper ESPN Health Check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+
+    env:
+      ESPN_LEAGUE_ID: "25456"
+      ESPN_TEAM_ID: "1"
+      ESPN_SEASON: "2026"
+      ESPN_TEAM_NAME: "Taylor Made"
+      SWID: ${{ secrets.SWID }}
+      ESPN_S2: ${{ secrets.ESPN_S2 }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: keeper-espn-bootstrap
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: python -m pip install -e .
+
+      - name: Run live Keeper refresh
+        run: keeper-refresh --output-dir keeper_live_test
+
+      - name: Show validation result
+        run: |
+          cat keeper_live_test/latest/manifest.json
