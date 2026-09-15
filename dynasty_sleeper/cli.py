@@ -1,14 +1,10 @@
-﻿from __future__ import annotations
-
+from __future__ import annotations
 
 import argparse
 import json
 
-
 from .health import run_healthcheck
-from .pipeline import run_refresh
-
-
+from .guarded_pipeline import run_refresh
 
 
 def main():
@@ -24,7 +20,6 @@ def main():
     p.add_argument("--skip-players-healthcheck", action="store_true", help="Skip the large /players/nfl endpoint during healthcheck")
     args = p.parse_args()
 
-
     if args.healthcheck:
         result = run_healthcheck(
             week=args.week,
@@ -36,10 +31,8 @@ def main():
             raise SystemExit(2)
         return
 
-
     if args.week is None:
         p.error("--week is required unless --healthcheck is used")
-
 
     result = run_refresh(
         week=args.week,
@@ -54,8 +47,6 @@ def main():
     print(json.dumps(printable, indent=2))
     if result["critical_failures"]:
         raise SystemExit(2)
-
-
 
 
 if __name__ == "__main__":
