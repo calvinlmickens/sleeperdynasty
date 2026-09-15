@@ -77,14 +77,15 @@ def reconcile_snapshot(
         for m in matchups:
             rid = int(m["roster_id"])
             raw_starters = [str(x) for x in (m.get("starters") or []) if x is not None]
+            raw_nonzero_starters = [player_id for player_id in raw_starters if player_id and player_id != "0"]
             expected = {
                 player_id: idx
                 for idx, player_id in enumerate(raw_starters)
                 if player_id and player_id != "0"
             }
             expected_ids = list(expected)
-            if len(expected_ids) != len(set(expected_ids)):
-                duplicate_matchup_starters.append({"roster_id": rid, "starters": expected_ids})
+            if len(raw_nonzero_starters) != len(set(raw_nonzero_starters)):
+                duplicate_matchup_starters.append({"roster_id": rid, "starters": raw_nonzero_starters})
 
             matchup_players = {str(x) for x in (m.get("players") or []) if x is not None}
             missing_from_matchup_players = [pid for pid in expected_ids if pid not in matchup_players]
