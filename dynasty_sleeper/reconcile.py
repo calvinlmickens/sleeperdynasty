@@ -66,13 +66,14 @@ def reconcile_snapshot(
         bad = {mid: rids for mid, rids in groups.items() if mid is not None and len(rids) != 2}
         add("matchup_pairing", not bad, f"bad_matchups={bad}")
 
-        # Weekly starter truth comes from the matchup endpoint, not the roster endpoint.
-        # The roster endpoint can already reflect next week's lineup. Validate both
-        # starter identity and starter_order so lineup-slot mapping cannot silently drift.
+        # Weekly roster/starter truth comes from the matchup endpoint, not the live
+        # roster endpoint. Validate both membership and starter order for every team.
         starter_assignment_failures: list[dict[str, Any]] = []
         matchup_membership_failures: list[dict[str, Any]] = []
         duplicate_matchup_starters: list[dict[str, Any]] = []
-        fallback_sources: list[int] = []
+        starter_fallback_sources: list[int] = []
+        roster_assignment_failures: list[dict[str, Any]] = []
+        roster_fallback_sources: list[int] = []
 
         for m in matchups:
             rid = int(m["roster_id"])
@@ -87,7 +88,8 @@ def reconcile_snapshot(
             if len(raw_nonzero_starters) != len(set(raw_nonzero_starters)):
                 duplicate_matchup_starters.append({"roster_id": rid, "starters": raw_nonzero_starters})
 
-            matchup_players = {str(x) for x in (m.get("players") or []) if x is not None}
+            matchup_players_list = [str(x) for x in (m.get("players") or []) if x is not None]
+            matchup_players = set(matchup_players_list)
             missing_from_matchup_players = [pid for pid in expected_ids if pid not in matchup_players]
             if missing_from_matchup_players:
                 matchup_membership_failures.append({"roster_id": rid, "missing": missing_from_matchup_players})
@@ -97,14 +99,23 @@ def reconcile_snapshot(
             for _, row in rows[rows["is_starter"] == True].iterrows():  # noqa: E712
                 pid = str(row["sleeper_player_id"])
                 order = pd.to_numeric(pd.Series([row.get("starter_order")]), errors="coerce").iloc[0]
-                if pd.isna(order):
-                    generated[pid] = -1
-                else:
-                    generated[pid] = int(order)
+                generated[pid] = -1 if pd.isna(order) else int(order)
 
-            source_values = set(rows.get("starter_assignment_source", pd.Series(dtype=str)).dropna().astype(str).tolist())
-            if source_values and source_values != {"WEEKLY_MATCHUP_STARTERS"}:
-                fallback_sources.append(rid)
+            starter_sources = set(rows.get("starter_assignment_source", pd.Series(dtype=str)).dropna().astype(str).tolist())
+            if starter_sources and starter_sources != {"WEEKLY_MATCHUP_STARTERS"}:
+                starter_fallback_sources.append(rid)
+
+            roster_sources = set(rows.get("roster_assignment_source", pd.Series(dtype=str)).dropna().astype(str).tolist())
+            if roster_sources and roster_sources != {"WEEKLY_MATCHUP_PLAYERS"}:
+                roster_fallback_sources.append(rid)
+
+            generated_players = set(rows["sleeper_player_id"].astype(str).tolist())
+            if generated_players != matchup_players:
+                roster_assignment_failures.append({
+                    "roster_id": rid,
+                    "missing_from_generated": sorted(matchup_players - generated_players),
+                    "extra_in_generated": sorted(generated_players - matchup_players),
+                })
 
             if generated != expected:
                 starter_assignment_failures.append({
@@ -130,8 +141,18 @@ def reconcile_snapshot(
         )
         add(
             "matchup_starter_source",
-            not fallback_sources,
-            f"fallback_roster_ids={fallback_sources}",
+            not starter_fallback_sources,
+            f"fallback_roster_ids={starter_fallback_sources}",
+        )
+        add(
+            "matchup_player_assignment",
+            not roster_assignment_failures,
+            f"exceptions={roster_assignment_failures}",
+        )
+        add(
+            "matchup_player_source",
+            not roster_fallback_sources,
+            f"fallback_roster_ids={roster_fallback_sources}",
         )
 
     return pd.DataFrame([asdict(c) for c in checks])
@@ -159,15 +180,33 @@ def roster_delta(previous: pd.DataFrame, current: pd.DataFrame) -> pd.DataFrame:
 def reconcile_roster_delta(previous: pd.DataFrame, current: pd.DataFrame, transactions: pd.DataFrame) -> pd.DataFrame:
     """Explain observed ownership changes with completed Sleeper transactions.
 
-    For a move A -> B, a matching DROP from A and ADD to B are expected when present in
-    Sleeper's transaction representation. For rostered -> free agent, DROP is sufficient;
-    for free agent -> rostered, ADD is sufficient.
+    Historical weekly membership now comes from the matchup endpoint. During the
+    one-time migration from the older live-roster schema, the previous baseline has
+    no roster_assignment_source column, so comparing it to the corrected historical
+    snapshot would create false ownership deltas. Treat that specific schema change
+    as a new reconciliation baseline; normal transaction reconciliation resumes on
+    subsequent runs once both snapshots use weekly membership semantics.
     """
-    delta = roster_delta(previous, current)
     columns = [
         "sleeper_player_id", "previous_roster_id", "current_roster_id",
         "expected_drop_found", "expected_add_found", "status", "detail",
     ]
+
+    current_sources = set(
+        current.get("roster_assignment_source", pd.Series(dtype=str)).dropna().astype(str).tolist()
+    )
+    if "roster_assignment_source" not in previous.columns and current_sources == {"WEEKLY_MATCHUP_PLAYERS"}:
+        return pd.DataFrame([{
+            "sleeper_player_id": None,
+            "previous_roster_id": None,
+            "current_roster_id": None,
+            "expected_drop_found": True,
+            "expected_add_found": True,
+            "status": "BASELINE",
+            "detail": "SCHEMA_MIGRATION_TO_WEEKLY_MATCHUP_MEMBERSHIP",
+        }], columns=columns)
+
+    delta = roster_delta(previous, current)
     if delta.empty:
         return pd.DataFrame(columns=columns)
 
