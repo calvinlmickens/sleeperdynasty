@@ -14,6 +14,7 @@ from .phase5 import apply_results_to_advisor_packet, build_league_results
 from .phase6 import (
     apply_intelligence_to_advisor_packet,
     build_intelligence_state,
+    intelligence_target_names,
     load_intelligence_input,
     validate_intelligence_state,
 )
@@ -108,15 +109,10 @@ def run_refresh(
             intelligence_input_source = None
             collector_status = "MISSING"
         else:
-            target_names = [
-                p.get("player_name")
-                for p in (roster_state.get("players") or [])
-                if p.get("player_name")
-            ]
-            target_names.extend(
-                p.get("player_name")
-                for p in (player_pool_state.get("players") or [])
-                if p.get("player_name")
+            target_names = intelligence_target_names(
+                roster_state,
+                player_pool_state,
+                pool_limit=20,
             )
             generated_dt = datetime.fromisoformat(pulled_at)
             official = collect_official_nfl_intelligence(
