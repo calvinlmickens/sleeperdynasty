@@ -88,8 +88,8 @@ def _roster_packet(roster_state: dict[str, Any]) -> list[dict[str, Any]]:
                 "position": player.get("position"),
                 "roster_status": player.get("roster_status"),
                 "fantasy_slot": player.get("fantasy_slot"),
-                "weekly_projection": None,
-                "actual_points_if_final": None,
+                "weekly_projection": player.get("weekly_projection"),
+                "actual_points_if_final": player.get("weekly_actual"),
                 "injury_status": player.get("injury_status"),
                 "role_trend": None,
                 "keeper_round": player.get("keeper_round"),
@@ -109,7 +109,7 @@ def _actionable_pool(player_pool_state: dict[str, Any], *, limit: int = 20) -> l
                 "player_name": player.get("player_name"),
                 "position": player.get("position"),
                 "availability": player.get("availability_status"),
-                "projection": None,
+                "projection": player.get("weekly_projection"),
                 "ros_context": None,
                 "role_trend": None,
                 "keeper_round_if_added": player.get("keeper_round_if_added"),
@@ -222,6 +222,41 @@ def _decision_queue(
     return queue
 
 
+def _opponent_packet(matchup_state: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    roster = list(matchup_state.get("opponent_roster") or [])
+    normalized = [
+        {
+            "player_name": player.get("player_name"),
+            "position": player.get("position"),
+            "roster_status": player.get("roster_status"),
+            "fantasy_slot": player.get("fantasy_slot"),
+            "weekly_projection": player.get("weekly_projection"),
+            "injury_status": player.get("injury_status"),
+        }
+        for player in roster
+    ]
+    starters = [row for row in normalized if row.get("roster_status") == "STARTER"]
+    starters.sort(
+        key=lambda row: (
+            row.get("weekly_projection") is None,
+            -(float(row.get("weekly_projection") or 0.0)),
+            str(row.get("player_name") or ""),
+        )
+    )
+    key_players = starters[:5]
+    projected_count = sum(1 for row in normalized if row.get("weekly_projection") is not None)
+    coverage = {
+        "opponent_roster_count": len(normalized),
+        "projected_player_count": projected_count,
+        "projection_coverage": (
+            projected_count / len(normalized)
+            if normalized
+            else 0.0
+        ),
+    }
+    return normalized, key_players, coverage
+
+
 def build_advisor_packet(
     *,
     manifest: dict[str, Any],
@@ -235,14 +270,26 @@ def build_advisor_packet(
 ) -> dict[str, Any]:
     standing = _team_row(league_state, team_id)
     roster_issues = _roster_issue_summary(roster_state)
+    opponent_roster, key_opponent_players, opponent_coverage = _opponent_packet(matchup_state)
 
     known_gaps = [
-        "Per-player weekly projections are not yet normalized.",
         "Per-player actual points are not yet normalized for final-week recap use.",
-        "Opponent roster/key-player data is not yet normalized.",
         "External intelligence/role-trend/ROS context is not yet automated.",
         "Final TCI is intentionally not assigned by automation.",
     ]
+    roster_projection_count = sum(
+        1
+        for player in roster_state.get("players") or []
+        if player.get("weekly_projection") is not None
+    )
+    if roster_projection_count < len(roster_state.get("players") or []):
+        known_gaps.append(
+            "ESPN weekly projections are normalized, but some Taylor Made players do not have a current platform projection."
+        )
+    if opponent_coverage["projected_player_count"] < opponent_coverage["opponent_roster_count"]:
+        known_gaps.append(
+            "Opponent roster is normalized, but some opponent players do not have a current ESPN projection."
+        )
 
     record = {
         "wins": standing.get("wins"),
@@ -285,10 +332,14 @@ def build_advisor_packet(
             "opponent_projection": matchup_state.get("opponent_projected_score"),
             "projected_margin": matchup_state.get("projected_margin"),
             "matchup_status": matchup_state.get("matchup_status"),
-            "key_opponent_players": [],
-            "unresolved_matchup_conditions": [
-                "Opponent key-player detail is not yet normalized."
-            ],
+            "key_opponent_players": key_opponent_players,
+            "opponent_roster": opponent_roster,
+            "opponent_projection_coverage": opponent_coverage,
+            "unresolved_matchup_conditions": (
+                []
+                if opponent_coverage["projected_player_count"] == opponent_coverage["opponent_roster_count"]
+                else ["Some opponent players do not have a current ESPN projection."]
+            ),
         },
         "taylor_made_roster": _roster_packet(roster_state),
         "actionable_player_pool": _actionable_pool(player_pool_state),
