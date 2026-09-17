@@ -149,6 +149,9 @@ def parse_depth_chart_html(
                     )
 
     if valid_rows == 0:
+        page_text = " ".join(soup.get_text(" ", strip=True).split()).lower()
+        if "depth chart" in page_text and soup.find("img"):
+            raise ValueError("UNSUPPORTED_IMAGE_ONLY_DEPTH_CHART")
         raise RuntimeError("No recognizable depth-chart rows found")
 
     snapshot: list[dict[str, Any]] = []
@@ -303,6 +306,12 @@ def collect_official_depth_chart_intelligence(
             )
             snapshot.extend(team_snapshot)
             source_names.append("Official Team Depth Chart")
+        except ValueError as exc:
+            if str(exc) == "UNSUPPORTED_IMAGE_ONLY_DEPTH_CHART":
+                continue
+            errors.append(
+                f"team {team_id} depth chart: {type(exc).__name__}: {exc}"
+            )
         except Exception as exc:
             errors.append(
                 f"team {team_id} depth chart: {type(exc).__name__}: {exc}"
