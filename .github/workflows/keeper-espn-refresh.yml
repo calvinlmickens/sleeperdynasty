@@ -1,0 +1,65 @@
+name: Keeper ESPN Refresh
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    env:
+      ESPN_LEAGUE_ID: "25456"
+      ESPN_TEAM_ID: "1"
+      ESPN_SEASON: "2026"
+      ESPN_TEAM_NAME: "Taylor Made"
+      SWID: ${{ secrets.SWID }}
+      ESPN_S2: ${{ secrets.ESPN_S2 }}
+      GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+      GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
+      GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: python -m pip install -e .
+
+      - name: Download prior validated Keeper baseline from Google Drive
+        run: |
+          rm -rf keeper_live
+          mkdir -p keeper_live/last_known_good
+          python -m keeper_espn.drive_sync download --dest keeper_live/last_known_good
+
+      - name: Run live Keeper refresh
+        run: |
+          python -m keeper_espn.cli --output-dir keeper_live
+
+      - name: Show Keeper manifest
+        if: always()
+        run: |
+          if [[ -f keeper_live/latest/manifest.json ]]; then
+            cat keeper_live/latest/manifest.json
+          fi
+
+      - name: Persist validated Keeper state to Google Drive
+        run: |
+          python -m keeper_espn.drive_sync upload --source keeper_live/latest
+
+      - name: Upload diagnostic artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: keeper-refresh-state
+          path: keeper_live/latest/
+          if-no-files-found: error
+          retention-days: 14
