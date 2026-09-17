@@ -521,6 +521,78 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
         self.assertNotIn("Pool Player 25", names)
 
 
+    def test_pff_team_rss_discovery_and_dedupe(self) -> None:
+        from keeper_espn.pff_intel import discover_team_feeds, parse_pff_team_rss
+
+        directory_html = """
+        <html><body>
+          <a href="/feed/teams/14">Indianapolis Colts</a>
+          <a href="/feed/teams/26">Los Angeles Rams</a>
+          <a href="/feed/teams/10">Denver Broncos</a>
+        </body></html>
+        """
+        feeds = discover_team_feeds(directory_html)
+        self.assertEqual(
+            feeds["indianapolis colts"],
+            "https://www.pff.com/feed/teams/14",
+        )
+        self.assertEqual(
+            feeds["los angeles rams"],
+            "https://www.pff.com/feed/teams/26",
+        )
+
+        xml = """<?xml version="1.0"?>
+        <rss><channel>
+          <item>
+            <title>Test Receiver sees expanded role</title>
+            <link>https://www.pff.com/news/test-receiver</link>
+            <guid>pff-test-receiver-1</guid>
+            <pubDate>Thu, 17 Sep 2026 22:00:00 GMT</pubDate>
+            <description>Test Receiver handled more first-team snaps and routes.</description>
+          </item>
+          <item>
+            <title>Other Player update</title>
+            <link>https://www.pff.com/news/other</link>
+            <guid>pff-other-1</guid>
+            <pubDate>Thu, 17 Sep 2026 22:00:00 GMT</pubDate>
+            <description>Other Player had a strong game.</description>
+          </item>
+        </channel></rss>
+        """
+        targets = [
+            {
+                "player_id": "103",
+                "player_name": "Test Receiver",
+                "position": "WR",
+                "scope": "ROSTER",
+            }
+        ]
+
+        items, seen_ids = parse_pff_team_rss(
+            xml,
+            target_players=targets,
+            observed_at="2026-09-17T19:00:00-04:00",
+            previous_seen_ids=[],
+            source_url="https://www.pff.com/feed/teams/26",
+        )
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["player_name"], "Test Receiver")
+        self.assertEqual(items[0]["source_tier"], "TIER_3")
+        self.assertEqual(items[0]["review_bucket"], "CHALLENGE")
+        self.assertEqual(items[0]["category"], "ROLE")
+        self.assertEqual(len(seen_ids), 1)
+
+        repeated, seen_again = parse_pff_team_rss(
+            xml,
+            target_players=targets,
+            observed_at="2026-09-17T19:05:00-04:00",
+            previous_seen_ids=seen_ids,
+            source_url="https://www.pff.com/feed/teams/26",
+        )
+        self.assertEqual(repeated, [])
+        self.assertEqual(seen_again, seen_ids)
+
+
     def test_public_analyst_rss_is_targeted_and_deduped(self) -> None:
         from keeper_espn.public_analyst_intel import parse_rotowire_rss
 
