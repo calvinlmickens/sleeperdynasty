@@ -480,6 +480,35 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
             os.environ.update(old)
 
 
+    def test_official_intelligence_targets_only_actionable_pool(self) -> None:
+        from keeper_espn.phase6 import intelligence_target_names
+
+        roster_state = {
+            "players": [
+                {"player_name": "Roster One"},
+                {"player_name": "Roster Two"},
+            ]
+        }
+        player_pool_state = {
+            "players": [
+                {"player_name": f"Pool Player {i}"}
+                for i in range(1, 26)
+            ]
+        }
+
+        names = intelligence_target_names(
+            roster_state,
+            player_pool_state,
+            pool_limit=20,
+        )
+
+        self.assertEqual(names[:2], ["Roster One", "Roster Two"])
+        self.assertEqual(len(names), 22)
+        self.assertIn("Pool Player 20", names)
+        self.assertNotIn("Pool Player 21", names)
+        self.assertNotIn("Pool Player 25", names)
+
+
     def test_official_nfl_public_collector_parsers(self) -> None:
         from keeper_espn.official_intel import parse_injury_html, parse_transactions_html
 
