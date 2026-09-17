@@ -13,30 +13,51 @@ BUCKET_ORDER = {"MATERIAL_CHANGE": 1, "CHALLENGE": 2, "VALIDATION": 3, "IGNORE":
 SCOPE_ORDER = {"ROSTER": 1, "PLAYER_POOL": 2, "UNMATCHED": 3}
 
 
+def intelligence_target_players(
+    roster_state: dict[str, Any],
+    player_pool_state: dict[str, Any],
+    *,
+    pool_limit: int = 20,
+) -> list[dict[str, Any]]:
+    players: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for scope, rows in (
+        ("ROSTER", roster_state.get("players") or []),
+        ("PLAYER_POOL", list(player_pool_state.get("players") or [])[:pool_limit]),
+    ):
+        for player in rows:
+            name = str(player.get("player_name") or "").strip()
+            key = _norm_name(name)
+            if not name or key in seen:
+                continue
+            seen.add(key)
+            players.append(
+                {
+                    "player_id": player.get("player_id"),
+                    "player_name": name,
+                    "position": player.get("position"),
+                    "nfl_team_id": player.get("nfl_team_id"),
+                    "scope": scope,
+                }
+            )
+    return players
+
+
 def intelligence_target_names(
     roster_state: dict[str, Any],
     player_pool_state: dict[str, Any],
     *,
     pool_limit: int = 20,
 ) -> list[str]:
-    names: list[str] = []
-    seen: set[str] = set()
-
-    for player in roster_state.get("players") or []:
-        name = str(player.get("player_name") or "").strip()
-        key = _norm_name(name)
-        if name and key not in seen:
-            seen.add(key)
-            names.append(name)
-
-    for player in list(player_pool_state.get("players") or [])[:pool_limit]:
-        name = str(player.get("player_name") or "").strip()
-        key = _norm_name(name)
-        if name and key not in seen:
-            seen.add(key)
-            names.append(name)
-
-    return names
+    return [
+        player["player_name"]
+        for player in intelligence_target_players(
+            roster_state,
+            player_pool_state,
+            pool_limit=pool_limit,
+        )
+    ]
 
 
 def _norm_name(value: Any) -> str:
