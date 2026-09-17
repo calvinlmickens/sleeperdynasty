@@ -22,7 +22,7 @@ from .phase6 import (
 from .official_intel import collect_official_nfl_intelligence
 from .depth_chart_intel import collect_official_depth_chart_intelligence
 from .public_analyst_intel import collect_public_analyst_intelligence
-from .pff_intel import collect_pff_public_intelligence
+from .pff_intel import collect_pff_public_intelligence, emit_after_baseline
 from .pipeline import (
     ET,
     SCHEMA_VERSION,
@@ -166,7 +166,10 @@ def run_refresh(
                 previous_seen_ids=previous_pff_seen_ids,
             )
 
-            pff_items = pff.items if previous_pff_initialized else []
+            pff_items = emit_after_baseline(
+                pff.items,
+                previous_initialized=previous_pff_initialized,
+            )
             raw_intelligence = official.items + depth.items + analyst.items + pff_items
             intelligence_input_source = "PUBLIC_OFFICIAL_NFL_TEAM_DEPTH_AND_ANALYST_RSS"
             collector_errors = official.errors + depth.errors + analyst.errors + pff.errors
