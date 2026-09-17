@@ -22,7 +22,7 @@ from .phase6 import (
 from .official_intel import collect_official_nfl_intelligence
 from .depth_chart_intel import collect_official_depth_chart_intelligence
 from .public_analyst_intel import collect_public_analyst_intelligence
-from .pff_intel import collect_pff_public_intelligence
+from .pff_intel import collect_pff_public_intelligence, emit_after_baseline
 from .pipeline import (
     ET,
     SCHEMA_VERSION,
@@ -113,6 +113,7 @@ def run_refresh(
         pff_errors: list[str] = []
         pff_seen_ids: list[str] = []
         pff_feed_count = 0
+        pff_initialized = False
 
         if intelligence_file is not None:
             raw_intelligence, intelligence_input_source = load_intelligence_input(intelligence_file)
@@ -146,6 +147,7 @@ def run_refresh(
             previous_depth_snapshot = previous_intelligence.get("depth_chart_snapshot")
             previous_analyst_seen_ids = previous_intelligence.get("analyst_seen_ids") or []
             previous_pff_seen_ids = previous_intelligence.get("pff_seen_ids") or []
+            previous_pff_initialized = bool(previous_intelligence.get("pff_initialized"))
 
             depth = collect_official_depth_chart_intelligence(
                 target_players=target_players,
@@ -164,7 +166,11 @@ def run_refresh(
                 previous_seen_ids=previous_pff_seen_ids,
             )
 
-            raw_intelligence = official.items + depth.items + analyst.items + pff.items
+            pff_items = emit_after_baseline(
+                pff.items,
+                previous_initialized=previous_pff_initialized,
+            )
+            raw_intelligence = official.items + depth.items + analyst.items + pff_items
             intelligence_input_source = "PUBLIC_OFFICIAL_NFL_TEAM_DEPTH_AND_ANALYST_RSS"
             collector_errors = official.errors + depth.errors + analyst.errors + pff.errors
             collector_sources = sorted(
@@ -185,6 +191,7 @@ def run_refresh(
             pff_errors = pff.errors
             pff_seen_ids = pff.seen_ids
             pff_feed_count = pff.feed_count
+            pff_initialized = previous_pff_initialized or pff.status in {"CURRENT", "DEGRADED"}
 
             statuses = {official.status, depth.status, analyst.status, pff.status}
             if statuses <= {"CURRENT", "MISSING"} and "CURRENT" in statuses:
@@ -217,6 +224,7 @@ def run_refresh(
         intelligence_state["pff_errors"] = pff_errors
         intelligence_state["pff_seen_ids"] = pff_seen_ids
         intelligence_state["pff_feed_count"] = pff_feed_count
+        intelligence_state["pff_initialized"] = pff_initialized
         errors.extend(validate_intelligence_state(intelligence_state))
 
         manifest = {
@@ -249,6 +257,7 @@ def run_refresh(
                 "pff_status": intelligence_state.get("pff_status"),
                 "pff_errors": intelligence_state.get("pff_errors"),
                 "pff_feed_count": intelligence_state.get("pff_feed_count"),
+                "pff_initialized": intelligence_state.get("pff_initialized"),
             },
             "outputs": [
                 "league_state.json",

@@ -207,6 +207,14 @@ def parse_pff_team_rss(
     return items, seen_ids[-300:]
 
 
+def emit_after_baseline(
+    items: list[dict[str, Any]],
+    *,
+    previous_initialized: bool,
+) -> list[dict[str, Any]]:
+    return items if previous_initialized else []
+
+
 def collect_pff_public_intelligence(
     *,
     target_players: list[dict[str, Any]],
