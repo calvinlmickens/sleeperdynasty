@@ -70,6 +70,8 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
                 self.assertNotIn("waiver_type", league)
                 self.assertEqual(roster["players"][0]["keeper_round"], 5)
                 self.assertEqual(roster["players"][3]["keeper_round"], 17)
+                self.assertEqual(roster["players"][0]["weekly_projection"], 24.5)
+                self.assertEqual(advisor["taylor_made_roster"][0]["weekly_projection"], 24.5)
                 self.assertTrue(keeper["draft_completed"])
                 self.assertEqual(pool["player_count"], 2)
                 drafted_available = next(p for p in pool["players"] if p["player_id"] == "201")
@@ -78,6 +80,39 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
                 self.assertEqual(drafted_available["keeper_origin_if_added"], "DRAFTED")
                 self.assertEqual(undrafted_available["keeper_round_if_added"], 17)
                 self.assertEqual(undrafted_available["keeper_origin_if_added"], "UNDRAFTED_FA")
+                self.assertEqual(drafted_available["weekly_projection"], 12.6)
+                self.assertEqual(
+                    advisor["actionable_player_pool"][0]["projection"],
+                    12.6,
+                )
+                self.assertEqual(
+                    advisor["matchup"]["opponent_roster"][0]["player_name"],
+                    "Opponent Quarterback",
+                )
+                self.assertEqual(
+                    advisor["matchup"]["key_opponent_players"][0]["player_name"],
+                    "Opponent Quarterback",
+                )
+                self.assertEqual(
+                    advisor["matchup"]["key_opponent_players"][0]["weekly_projection"],
+                    27.3,
+                )
+                self.assertEqual(
+                    advisor["matchup"]["opponent_projection_coverage"]["opponent_roster_count"],
+                    4,
+                )
+                self.assertEqual(
+                    advisor["matchup"]["opponent_projection_coverage"]["projected_player_count"],
+                    4,
+                )
+                self.assertNotIn(
+                    "Per-player weekly projections are not yet normalized.",
+                    advisor["run_state"]["known_gaps"],
+                )
+                self.assertNotIn(
+                    "Opponent roster/key-player data is not yet normalized.",
+                    advisor["run_state"]["known_gaps"],
+                )
 
                 changed_fixture = Path(tmp) / "changed_fixture"
                 shutil.copytree(base_fixture, changed_fixture)
