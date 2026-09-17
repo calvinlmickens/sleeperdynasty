@@ -7,7 +7,7 @@ name = "dynasty-sleeper"
 version = "0.3.0"
 description = "Fantasy football league-state ingestion and reconciliation for the Dynasty and Keeper Advisors"
 requires-python = ">=3.10"
-dependencies = ["requests>=2.31", "pandas>=2.0"]
+dependencies = ["requests>=2.31", "pandas>=2.0", "beautifulsoup4>=4.12"]
 
 [project.scripts]
 dynasty-refresh = "dynasty_sleeper.cli:main"
