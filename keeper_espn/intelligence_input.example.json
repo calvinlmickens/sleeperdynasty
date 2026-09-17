@@ -1,0 +1,20 @@
+{
+  "items": [
+    {
+      "item_id": "source-unique-id",
+      "source_name": "NFL Team Injury Report",
+      "source_tier": "TIER_1",
+      "source_url": "https://example.com/source",
+      "published_at": "2026-09-17T16:00:00-04:00",
+      "observed_at": "2026-09-17T16:05:00-04:00",
+      "review_bucket": "MATERIAL_CHANGE",
+      "category": "INJURY",
+      "player_id": null,
+      "player_name": "Player Name",
+      "headline": "Short factual headline",
+      "detail": "Concise evidence summary.",
+      "confidence": "HIGH",
+      "tags": ["practice", "availability"]
+    }
+  ]
+}

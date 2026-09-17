@@ -60,7 +60,17 @@ jobs:
           from pathlib import Path
           packet = json.loads(Path("keeper_live_test/latest/advisor_packet.json").read_text())
           results = json.loads(Path("keeper_live_test/latest/league_results.json").read_text())
+          intelligence = json.loads(Path("keeper_live_test/latest/intelligence_state.json").read_text())
           print(json.dumps({
+              "intelligence_state": {
+                  "source_status": intelligence.get("source_status"),
+                  "item_count": intelligence.get("item_count"),
+                  "source_names": intelligence.get("source_names"),
+                  "matched_roster_count": intelligence.get("matched_roster_count"),
+                  "matched_player_pool_count": intelligence.get("matched_player_pool_count"),
+                  "unmatched_count": intelligence.get("unmatched_count"),
+                  "review_bucket_counts": intelligence.get("review_bucket_counts"),
+              },
               "league_results": {
                   "week": results.get("week"),
                   "current_espn_week": results.get("current_espn_week"),

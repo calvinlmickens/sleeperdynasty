@@ -3,19 +3,25 @@ from __future__ import annotations
 import argparse
 import json
 
-from .pipeline_phase5 import run_refresh
+from .pipeline_phase6 import run_refresh
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Refresh Keeper League Advisor ESPN state")
     parser.add_argument("--output-dir", default="keeper_output")
     parser.add_argument("--fixture-dir", default=None, help="Read fixture league.json instead of ESPN")
+    parser.add_argument(
+        "--intelligence-file",
+        default=None,
+        help="Optional normalized external intelligence JSON input",
+    )
     parser.add_argument("--season", type=int, default=None, help="Override ESPN_SEASON")
     args = parser.parse_args()
 
     result = run_refresh(
         output_dir=args.output_dir,
         fixture_dir=args.fixture_dir,
+        intelligence_file=args.intelligence_file,
         season=args.season,
     )
     print(json.dumps(result, indent=2))
