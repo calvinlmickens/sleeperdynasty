@@ -49,11 +49,25 @@ jobs:
       - name: Run live Keeper refresh
         run: keeper-refresh --output-dir keeper_live_test
 
-      - name: Show validation and delta result
+      - name: Show validation, delta, and advisor handoff
         run: |
           cat keeper_live_test/latest/manifest.json
           echo
           cat keeper_live_test/latest/delta_state.json
+          echo
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          packet = json.loads(Path("keeper_live_test/latest/advisor_packet.json").read_text())
+          print(json.dumps({
+              "run_state": packet.get("run_state"),
+              "team_state": packet.get("team_state"),
+              "matchup": packet.get("matchup"),
+              "decision_queue": packet.get("decision_queue"),
+              "material_deltas": packet.get("material_deltas"),
+              "automation_boundary": packet.get("automation_boundary"),
+          }, indent=2))
+          PY
 
       - name: Upload live Keeper state
         uses: actions/upload-artifact@v4
