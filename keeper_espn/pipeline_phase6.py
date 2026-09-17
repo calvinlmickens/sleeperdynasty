@@ -15,10 +15,12 @@ from .phase6 import (
     apply_intelligence_to_advisor_packet,
     build_intelligence_state,
     intelligence_target_names,
+    intelligence_target_players,
     load_intelligence_input,
     validate_intelligence_state,
 )
 from .official_intel import collect_official_nfl_intelligence
+from .depth_chart_intel import collect_official_depth_chart_intelligence
 from .pipeline import (
     ET,
     SCHEMA_VERSION,
@@ -99,6 +101,9 @@ def run_refresh(
         collector_status = None
         collector_errors: list[str] = []
         collector_sources: list[str] = []
+        depth_chart_status = None
+        depth_chart_errors: list[str] = []
+        depth_chart_snapshot: list[dict] = []
 
         if intelligence_file is not None:
             raw_intelligence, intelligence_input_source = load_intelligence_input(intelligence_file)
@@ -109,23 +114,50 @@ def run_refresh(
             intelligence_input_source = None
             collector_status = "MISSING"
         else:
-            target_names = intelligence_target_names(
+            target_players = intelligence_target_players(
                 roster_state,
                 player_pool_state,
                 pool_limit=20,
             )
+            target_names = [player["player_name"] for player in target_players]
             generated_dt = datetime.fromisoformat(pulled_at)
+
             official = collect_official_nfl_intelligence(
                 target_names=target_names,
                 observed_at=pulled_at,
                 year=config.season,
                 month=generated_dt.month,
             )
-            raw_intelligence = official.items
-            intelligence_input_source = "PUBLIC_OFFICIAL_NFL"
-            collector_status = official.status
-            collector_errors = official.errors
-            collector_sources = official.source_names
+
+            previous_intelligence = (
+                previous.get("intelligence_state")
+                if previous
+                else None
+            ) or {}
+            previous_depth_snapshot = previous_intelligence.get("depth_chart_snapshot")
+            depth = collect_official_depth_chart_intelligence(
+                target_players=target_players,
+                observed_at=pulled_at,
+                previous_snapshot=previous_depth_snapshot,
+            )
+
+            raw_intelligence = official.items + depth.items
+            intelligence_input_source = "PUBLIC_OFFICIAL_NFL_AND_TEAM_DEPTH_CHARTS"
+            collector_errors = official.errors + depth.errors
+            collector_sources = sorted(set(official.source_names + depth.source_names))
+            depth_chart_status = depth.status
+            depth_chart_errors = depth.errors
+            depth_chart_snapshot = depth.snapshot
+
+            statuses = {official.status, depth.status}
+            if statuses <= {"CURRENT", "MISSING"} and "CURRENT" in statuses:
+                collector_status = "CURRENT"
+            elif "CURRENT" in statuses or "DEGRADED" in statuses:
+                collector_status = "DEGRADED"
+            elif statuses == {"MISSING"}:
+                collector_status = "MISSING"
+            else:
+                collector_status = "FAILED"
 
         intelligence_state = build_intelligence_state(
             raw_items=raw_intelligence,
@@ -138,6 +170,9 @@ def run_refresh(
         intelligence_state["source_status"] = collector_status or intelligence_state.get("source_status")
         intelligence_state["collector_sources"] = collector_sources
         intelligence_state["collector_errors"] = collector_errors
+        intelligence_state["depth_chart_status"] = depth_chart_status
+        intelligence_state["depth_chart_errors"] = depth_chart_errors
+        intelligence_state["depth_chart_snapshot"] = depth_chart_snapshot
         errors.extend(validate_intelligence_state(intelligence_state))
 
         manifest = {
@@ -163,6 +198,8 @@ def run_refresh(
                 "external_intelligence_input": intelligence_input_source,
                 "external_intelligence_sources": intelligence_state.get("collector_sources"),
                 "external_intelligence_errors": intelligence_state.get("collector_errors"),
+                "depth_chart_status": intelligence_state.get("depth_chart_status"),
+                "depth_chart_errors": intelligence_state.get("depth_chart_errors"),
             },
             "outputs": [
                 "league_state.json",
