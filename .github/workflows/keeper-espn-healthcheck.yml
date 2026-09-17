@@ -17,8 +17,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: keeper-espn-bootstrap
 
       - uses: actions/setup-python@v5
         with:
