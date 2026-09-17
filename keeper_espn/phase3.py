@@ -31,7 +31,7 @@ def load_validated_snapshot(snapshot_dir: str | Path) -> dict[str, dict[str, Any
     if any(not (snapshot_dir / name).exists() for name in required):
         return None
 
-    return {
+    result = {
         "manifest": manifest,
         "league_state": _read_json(snapshot_dir / "league_state.json"),
         "roster_state": _read_json(snapshot_dir / "roster_state.json"),
@@ -39,6 +39,10 @@ def load_validated_snapshot(snapshot_dir: str | Path) -> dict[str, dict[str, Any
         "keeper_state": _read_json(snapshot_dir / "keeper_state.json"),
         "player_pool": _read_json(snapshot_dir / "player_pool.json"),
     }
+    intelligence_path = snapshot_dir / "intelligence_state.json"
+    if intelligence_path.exists():
+        result["intelligence_state"] = _read_json(intelligence_path)
+    return result
 
 
 def _player_index(state: dict[str, Any], key: str = "players") -> dict[str, dict[str, Any]]:
