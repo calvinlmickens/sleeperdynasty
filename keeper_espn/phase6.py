@@ -221,7 +221,8 @@ def apply_intelligence_to_advisor_packet(
     advisor_packet["run_state"]["external_intelligence_status"] = intelligence_state.get("source_status")
     advisor_packet["run_state"]["external_intelligence_item_count"] = intelligence_state.get("item_count")
 
-    if intelligence_state.get("item_count"):
+    source_status = intelligence_state.get("source_status")
+    if source_status in {"CURRENT", "DEGRADED"}:
         gaps = advisor_packet["run_state"].get("known_gaps") or []
         advisor_packet["run_state"]["known_gaps"] = [
             gap
@@ -229,6 +230,6 @@ def apply_intelligence_to_advisor_packet(
             if gap != "External intelligence/role-trend/ROS context is not yet automated."
         ]
         advisor_packet["run_state"]["known_gaps"].append(
-            "External intelligence is normalized, but role trend/ROS interpretation remains an Advisor responsibility."
+            "Official external intelligence collection is active; role trend/ROS interpretation remains an Advisor responsibility."
         )
     return advisor_packet
