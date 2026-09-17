@@ -7,7 +7,7 @@ import shutil
 from tempfile import TemporaryDirectory
 import unittest
 
-from keeper_espn.pipeline_phase3 import run_refresh
+from keeper_espn.pipeline_phase4 import run_refresh
 
 
 class KeeperEspnPhase3Tests(unittest.TestCase):
@@ -35,12 +35,14 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
                     "keeper_state.json",
                     "player_pool.json",
                     "delta_state.json",
+                    "advisor_packet.json",
                 ):
                     self.assertTrue((latest / name).exists(), name)
                     self.assertTrue((lkg / name).exists(), name)
 
                 first_manifest = json.loads((latest / "manifest.json").read_text())
                 first_delta = json.loads((latest / "delta_state.json").read_text())
+                advisor = json.loads((latest / "advisor_packet.json").read_text())
                 league = json.loads((latest / "league_state.json").read_text())
                 roster = json.loads((latest / "roster_state.json").read_text())
                 keeper = json.loads((latest / "keeper_state.json").read_text())
@@ -50,6 +52,12 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
                 self.assertEqual(first_manifest["previous_validated_run_id"], None)
                 self.assertEqual(first_delta["baseline_status"], "FIRST_VALIDATED_RUN")
                 self.assertFalse(first_delta["material_change"])
+                self.assertEqual(advisor["run_state"]["validation_status"], "PASS")
+                self.assertEqual(advisor["team_state"]["team_name"], "Taylor Made")
+                self.assertFalse(advisor["automation_boundary"]["strategy_decisions_embedded"])
+                self.assertFalse(advisor["automation_boundary"]["final_tci_assigned"])
+                self.assertTrue(any(q["type"] == "INJURY_MONITOR_REQUIRED" for q in advisor["decision_queue"]))
+                self.assertTrue(any(q["type"] == "START_SIT_REQUIRED" for q in advisor["decision_queue"]))
                 self.assertEqual(league["league_allowed_ir_slots"], 2)
                 self.assertEqual(roster["league_allowed_ir_slots"], 2)
                 self.assertEqual(roster["players"][0]["keeper_round"], 5)
@@ -110,6 +118,7 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
 
                 second_manifest = json.loads((latest / "manifest.json").read_text())
                 second_delta = json.loads((latest / "delta_state.json").read_text())
+                second_advisor = json.loads((latest / "advisor_packet.json").read_text())
                 self.assertEqual(
                     second_manifest["previous_validated_run_id"],
                     first["run_id"],
@@ -128,6 +137,10 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
                 )
                 self.assertEqual(second_delta["roster"]["added"][0]["player_name"], "New Bench Receiver")
                 self.assertEqual(second_delta["roster"]["removed"][0]["player_name"], "Bench Runner")
+                self.assertEqual(second_advisor["material_deltas"]["summary"]["roster_adds"], 1)
+                self.assertEqual(second_advisor["material_deltas"]["summary"]["roster_drops"], 1)
+                self.assertEqual(second_advisor["team_state"]["waiver_priority"], 2)
+                self.assertEqual(len(second_advisor["actionable_player_pool"]), 2)
 
                 second_lkg_run_id = json.loads((lkg / "manifest.json").read_text())["run_id"]
                 self.assertEqual(second_lkg_run_id, second["run_id"])
