@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from .client import EspnPull
+from .pipeline import _weekly_stat_total
 
 POSITION_NAMES = {
     1: "QB",
@@ -67,6 +68,7 @@ def _extract_pool_player(
     entry: dict[str, Any],
     *,
     draft_rounds: dict[str, int],
+    week: int,
 ) -> dict[str, Any] | None:
     player = entry.get("player") or (entry.get("playerPoolEntry") or {}).get("player") or {}
     if not player and entry.get("fullName"):
@@ -91,6 +93,16 @@ def _extract_pool_player(
         "percent_started": ownership.get("percentStarted"),
         "keeper_round_if_added": drafted_round if drafted_round is not None else 17,
         "keeper_origin_if_added": "DRAFTED" if drafted_round is not None else "UNDRAFTED_FA",
+        "weekly_projection": _weekly_stat_total(
+            player,
+            week=week,
+            stat_source_id=1,
+        ),
+        "weekly_actual": _weekly_stat_total(
+            player,
+            week=week,
+            stat_source_id=0,
+        ),
     }
 
 
@@ -99,7 +111,11 @@ def build_player_pool_state(pull: EspnPull, *, week: int) -> dict[str, Any]:
     draft_rounds = _draft_round_map(pull.league)
     seen: set[str] = set()
     for entry in pull.available_players:
-        normalized = _extract_pool_player(entry, draft_rounds=draft_rounds)
+        normalized = _extract_pool_player(
+            entry,
+            draft_rounds=draft_rounds,
+            week=week,
+        )
         if not normalized:
             continue
         player_id = normalized["player_id"]
