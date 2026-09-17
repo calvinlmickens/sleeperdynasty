@@ -521,6 +521,74 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
         self.assertNotIn("Pool Player 25", names)
 
 
+    def test_official_depth_chart_is_change_driven(self) -> None:
+        from keeper_espn.depth_chart_intel import (
+            build_depth_chart_change_items,
+            parse_depth_chart_html,
+        )
+
+        html = """
+        <table>
+          <tr><th>Position</th><th>First</th><th>Second</th><th>Third</th></tr>
+          <tr><td>WR</td><td>Test Receiver</td><td>Other Receiver</td><td></td></tr>
+          <tr><td>RB</td><td>Lead Runner</td><td>Available Runner</td><td></td></tr>
+        </table>
+        """
+        targets = [
+            {
+                "player_id": "103",
+                "player_name": "Test Receiver",
+                "position": "WR",
+                "nfl_team_id": 14,
+                "scope": "ROSTER",
+            },
+            {
+                "player_id": "202",
+                "player_name": "Available Runner",
+                "position": "RB",
+                "nfl_team_id": 14,
+                "scope": "PLAYER_POOL",
+            },
+        ]
+        current = parse_depth_chart_html(
+            html,
+            target_players=targets,
+            team_id=14,
+            source_url="https://www.therams.com/team/depth-chart",
+            observed_at="2026-09-17T19:00:00-04:00",
+        )
+        by_id = {str(row["player_id"]): row for row in current}
+        self.assertEqual(by_id["103"]["depth_rank"], 1)
+        self.assertEqual(by_id["103"]["depth_label"], "FIRST")
+        self.assertEqual(by_id["202"]["depth_rank"], 2)
+        self.assertEqual(by_id["202"]["depth_label"], "SECOND")
+
+        first_baseline = build_depth_chart_change_items(
+            current_snapshot=current,
+            previous_snapshot=None,
+            observed_at="2026-09-17T19:00:00-04:00",
+        )
+        self.assertEqual(first_baseline, [])
+
+        previous = [dict(row) for row in current]
+        previous_receiver = next(row for row in previous if str(row["player_id"]) == "103")
+        previous_receiver["depth_rank"] = 2
+        previous_receiver["depth_label"] = "SECOND"
+
+        changes = build_depth_chart_change_items(
+            current_snapshot=current,
+            previous_snapshot=previous,
+            observed_at="2026-09-17T19:05:00-04:00",
+        )
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0]["player_name"], "Test Receiver")
+        self.assertEqual(changes[0]["source_tier"], "TIER_1")
+        self.assertEqual(changes[0]["review_bucket"], "MATERIAL_CHANGE")
+        self.assertEqual(changes[0]["category"], "ROLE")
+        self.assertIn("SECOND", changes[0]["headline"])
+        self.assertIn("FIRST", changes[0]["headline"])
+
+
     def test_official_nfl_public_collector_parsers(self) -> None:
         from keeper_espn.official_intel import parse_injury_html, parse_transactions_html
 
