@@ -80,8 +80,24 @@ def _team_player_results(side: dict[str, Any], *, week: int) -> list[dict[str, A
     return [_player_result(entry, week=week) for entry in _side_entries(side)]
 
 
-def _winner_team_id(matchup: dict[str, Any]) -> int | None:
+def _winner_code(matchup: dict[str, Any]) -> str | None:
     winner = matchup.get("winner")
+    if winner in {"HOME", "AWAY", "TIE"}:
+        return winner
+
+    home_score = _score(matchup.get("home") or {})
+    away_score = _score(matchup.get("away") or {})
+    if home_score is None or away_score is None:
+        return None
+    if home_score > away_score:
+        return "HOME"
+    if away_score > home_score:
+        return "AWAY"
+    return "TIE"
+
+
+def _winner_team_id(matchup: dict[str, Any]) -> int | None:
+    winner = _winner_code(matchup)
     if winner == "HOME":
         return _side_team_id(matchup.get("home"))
     if winner == "AWAY":
@@ -165,8 +181,14 @@ def build_league_results(
     matchups = _boxscore_schedule(pull, week=week)
     teams = _team_map(pull.league)
 
-    finalized = bool(matchups) and all(
-        matchup.get("winner") in {"HOME", "AWAY", "TIE"} for matchup in matchups
+    all_scores_present = bool(matchups) and all(
+        _score(matchup.get("home") or {}) is not None
+        and _score(matchup.get("away") or {}) is not None
+        for matchup in matchups
+    )
+    finalized = bool(matchups) and (
+        all(_winner_code(matchup) in {"HOME", "AWAY", "TIE"} for matchup in matchups)
+        or (week < current_week and all_scores_present)
     )
 
     matchup_rows: list[dict[str, Any]] = []
@@ -189,6 +211,7 @@ def build_league_results(
             if home_score is not None and away_score is not None
             else None
         )
+        winner_code = _winner_code(matchup)
         winner_id = _winner_team_id(matchup)
         winner_name = (
             home_name if winner_id == home_id else away_name if winner_id == away_id else None
@@ -206,7 +229,7 @@ def build_league_results(
                 "away_score": away_score,
                 "winner_team_id": winner_id,
                 "winner_team_name": winner_name,
-                "winner_code": matchup.get("winner"),
+                "winner_code": winner_code,
                 "margin": round(margin, 3) if margin is not None else None,
                 "close_game": margin is not None and margin <= 5.0,
                 "blowout": margin is not None and margin >= 30.0,
