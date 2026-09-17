@@ -31,3 +31,10 @@ jobs:
       - name: Show validation result
         run: |
           cat keeper_live_test/latest/manifest.json
+
+      - name: Upload live Keeper state
+        uses: actions/upload-artifact@v4
+        with:
+          name: keeper-live-state
+          path: keeper_live_test/latest/
+          retention-days: 3
