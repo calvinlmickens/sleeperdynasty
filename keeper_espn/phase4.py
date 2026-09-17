@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 
@@ -257,6 +258,49 @@ def _opponent_packet(matchup_state: dict[str, Any]) -> tuple[list[dict[str, Any]
     return normalized, key_players, coverage
 
 
+def _external_review_gate(manifest: dict[str, Any]) -> dict[str, Any]:
+    generated_at = manifest.get("generated_at_et")
+    weekday = None
+    if generated_at:
+        try:
+            weekday = datetime.fromisoformat(str(generated_at)).strftime("%A").upper()
+        except ValueError:
+            weekday = None
+
+    daily_focus = {
+        "MONDAY": ["ESPN", "OFFICIAL_NFL", "FANTASYPROS", "ROTOWIRE", "ESTABLISH_THE_RUN"],
+        "TUESDAY": ["ESPN", "OFFICIAL_NFL", "FANTASYPROS", "FANTASY_FOOTBALLERS", "LATE_ROUND", "ROTOWIRE"],
+        "WEDNESDAY": ["ESPN", "OFFICIAL_NFL", "FANTASYPROS", "ROTOWIRE", "ESTABLISH_THE_RUN"],
+        "THURSDAY": ["ESPN", "OFFICIAL_NFL", "FANTASYPROS", "ROTOWIRE", "ESTABLISH_THE_RUN", "FANTASY_FOOTBALLERS", "LATE_ROUND"],
+        "FRIDAY": ["ESPN", "OFFICIAL_NFL", "FANTASYPROS", "ROTOWIRE", "ESTABLISH_THE_RUN", "FANTASY_FOOTBALLERS", "LATE_ROUND", "ACTION_NETWORK"],
+        "SATURDAY": ["ESPN", "OFFICIAL_NFL", "FANTASYPROS", "ROTOWIRE", "ESTABLISH_THE_RUN", "FANTASY_FOOTBALLERS", "LATE_ROUND", "ACTION_NETWORK"],
+        "SUNDAY": ["ESPN", "OFFICIAL_NFL", "FANTASYPROS", "ROTOWIRE", "ESTABLISH_THE_RUN"],
+    }
+    sources = daily_focus.get(
+        weekday,
+        ["ESPN", "OFFICIAL_NFL", "FANTASYPROS", "ROTOWIRE", "ESTABLISH_THE_RUN"],
+    )
+    return {
+        "required_before_final_advisor_decision": True,
+        "weekday": weekday,
+        "required_source_checks": sources,
+        "classification_required": [
+            "MATERIAL_CHANGE",
+            "VALIDATION",
+            "CHALLENGE",
+            "IGNORE",
+        ],
+        "source_gap_rule": (
+            "If a prescribed source is unavailable, paywalled, stale, or has no relevant new content, "
+            "record the gap explicitly and continue with the remaining source stack."
+        ),
+        "anti_tunnel_vision_rule": (
+            "Do not finalize a daily workload from ESPN/official automation alone. "
+            "Establish the baseline first, then run the external analyst challenge/validation sweep."
+        ),
+    }
+
+
 def build_advisor_packet(
     *,
     manifest: dict[str, Any],
@@ -307,6 +351,7 @@ def build_advisor_packet(
             "data_freshness": manifest.get("data_freshness_status"),
             "known_gaps": known_gaps,
         },
+        "external_review_gate": _external_review_gate(manifest),
         "team_state": {
             "team_name": roster_state.get("team_name"),
             "record": record,
