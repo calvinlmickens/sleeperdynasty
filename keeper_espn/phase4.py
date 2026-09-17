@@ -144,11 +144,12 @@ def _decision_queue(
     injury_players = []
     for player in roster_state.get("players") or []:
         injury = str(player.get("injury_status") or "UNKNOWN")
-        if injury not in ACTIVEISH:
+        roster_status = player.get("roster_status")
+        if roster_status in {"STARTER", "BENCH"} and injury not in ACTIVEISH:
             injury_players.append(
                 {
                     "player_name": player.get("player_name"),
-                    "roster_status": player.get("roster_status"),
+                    "roster_status": roster_status,
                     "injury_status": injury,
                 }
             )
@@ -156,7 +157,7 @@ def _decision_queue(
         queue.append(
             {
                 "type": "INJURY_MONITOR_REQUIRED",
-                "reason": "One or more rostered players have non-active injury designations.",
+                "reason": "One or more active-roster players have non-active injury designations.",
                 "players": injury_players,
             }
         )

@@ -202,5 +202,47 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
             os.environ.update(old)
 
 
+    def test_ir_players_do_not_create_injury_monitor_noise(self) -> None:
+        from keeper_espn.phase4 import _decision_queue
+
+        roster_state = {
+            "players": [
+                {
+                    "player_name": "IR Player",
+                    "roster_status": "IR",
+                    "injury_status": "OUT",
+                },
+                {
+                    "player_name": "Bench Player",
+                    "roster_status": "BENCH",
+                    "injury_status": "QUESTIONABLE",
+                },
+            ]
+        }
+        delta_state = {
+            "summary": {
+                "player_pool_additions": 0,
+                "player_pool_removals": 0,
+                "roster_adds": 0,
+                "roster_drops": 0,
+                "keeper_changes": 0,
+            }
+        }
+        matchup_state = {"matchup_status": "PRE_GAME"}
+
+        queue = _decision_queue(
+            roster_state=roster_state,
+            delta_state=delta_state,
+            matchup_state=matchup_state,
+        )
+
+        injury_items = [q for q in queue if q["type"] == "INJURY_MONITOR_REQUIRED"]
+        self.assertEqual(len(injury_items), 1)
+        self.assertEqual(
+            [p["player_name"] for p in injury_items[0]["players"]],
+            ["Bench Player"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
