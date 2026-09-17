@@ -7,7 +7,7 @@ import shutil
 from tempfile import TemporaryDirectory
 import unittest
 
-from keeper_espn.pipeline_phase5 import run_refresh
+from keeper_espn.pipeline_phase6 import run_refresh
 
 
 class KeeperEspnPhase3Tests(unittest.TestCase):
@@ -37,6 +37,7 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
                     "delta_state.json",
                     "advisor_packet.json",
                     "league_results.json",
+                    "intelligence_state.json",
                 ):
                     self.assertTrue((latest / name).exists(), name)
                     self.assertTrue((lkg / name).exists(), name)
@@ -363,6 +364,115 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
                 )
                 self.assertNotIn(
                     "Per-player actual points are not yet normalized for final-week recap use.",
+                    advisor["run_state"]["known_gaps"],
+                )
+        finally:
+            os.environ.clear()
+            os.environ.update(old)
+
+
+    def test_external_intelligence_adapter_normalizes_and_matches(self) -> None:
+        old = dict(os.environ)
+        try:
+            os.environ["ESPN_LEAGUE_ID"] = "424242"
+            os.environ["ESPN_TEAM_ID"] = "1"
+            os.environ["ESPN_SEASON"] = "2026"
+            base_fixture = Path(__file__).parent / "keeper_fixtures"
+
+            with TemporaryDirectory() as tmp:
+                intel_path = Path(tmp) / "intelligence.json"
+                intel_path.write_text(
+                    json.dumps(
+                        {
+                            "items": [
+                                {
+                                    "item_id": "official-1",
+                                    "source_name": "NFL Team Injury Report",
+                                    "source_tier": "TIER_1",
+                                    "published_at": "2026-09-17T16:00:00-04:00",
+                                    "review_bucket": "MATERIAL_CHANGE",
+                                    "category": "INJURY",
+                                    "player_name": "Test Receiver",
+                                    "headline": "Test Receiver limited",
+                                    "detail": "Player was limited in practice.",
+                                    "confidence": "HIGH",
+                                },
+                                {
+                                    "item_id": "analyst-1",
+                                    "source_name": "32BeatWriters",
+                                    "source_tier": "TIER_3",
+                                    "published_at": "2026-09-17T15:00:00-04:00",
+                                    "review_bucket": "CHALLENGE",
+                                    "category": "ROLE",
+                                    "player_name": "Available Runner",
+                                    "headline": "Available Runner getting first-team work",
+                                    "detail": "Beat report suggests increased opportunity.",
+                                    "confidence": "MODERATE",
+                                },
+                                {
+                                    "item_id": "unmatched-1",
+                                    "source_name": "FantasyPros",
+                                    "source_tier": "TIER_2",
+                                    "published_at": "2026-09-17T14:00:00-04:00",
+                                    "review_bucket": "VALIDATION",
+                                    "category": "ROS",
+                                    "player_name": "Not In Our Packet",
+                                    "headline": "External player note",
+                                    "detail": "Useful league context but not matched.",
+                                    "confidence": "MODERATE",
+                                },
+                                {
+                                    "item_id": "ignore-1",
+                                    "source_name": "Social Discovery",
+                                    "source_tier": "TIER_5",
+                                    "published_at": "2026-09-17T13:00:00-04:00",
+                                    "review_bucket": "IGNORE",
+                                    "category": "RUMOR",
+                                    "player_name": "Test Runner",
+                                    "headline": "Unverified rumor",
+                                    "detail": "Discovery only.",
+                                    "confidence": "LOW",
+                                },
+                            ]
+                        },
+                        indent=2,
+                    )
+                    + "\n"
+                )
+
+                root = Path(tmp) / "output"
+                result = run_refresh(
+                    output_dir=root,
+                    fixture_dir=base_fixture,
+                    intelligence_file=intel_path,
+                )
+                self.assertEqual(result["status"], "PASS")
+                self.assertEqual(result["intelligence_status"], "CURRENT")
+                self.assertEqual(result["intelligence_item_count"], 4)
+
+                intelligence = json.loads((root / "latest" / "intelligence_state.json").read_text())
+                advisor = json.loads((root / "latest" / "advisor_packet.json").read_text())
+
+                self.assertEqual(intelligence["matched_roster_count"], 2)
+                self.assertEqual(intelligence["matched_player_pool_count"], 1)
+                self.assertEqual(intelligence["unmatched_count"], 1)
+                self.assertEqual(intelligence["review_bucket_counts"]["MATERIAL_CHANGE"], 1)
+                self.assertEqual(intelligence["review_bucket_counts"]["CHALLENGE"], 1)
+                self.assertEqual(intelligence["review_bucket_counts"]["VALIDATION"], 1)
+                self.assertEqual(intelligence["review_bucket_counts"]["IGNORE"], 1)
+
+                visible_ids = [item["item_id"] for item in advisor["material_intelligence"]]
+                self.assertEqual(
+                    visible_ids,
+                    ["official-1", "analyst-1", "unmatched-1"],
+                )
+                self.assertNotIn("ignore-1", visible_ids)
+                self.assertEqual(
+                    advisor["run_state"]["external_intelligence_status"],
+                    "CURRENT",
+                )
+                self.assertNotIn(
+                    "External intelligence/role-trend/ROS context is not yet automated.",
                     advisor["run_state"]["known_gaps"],
                 )
         finally:
