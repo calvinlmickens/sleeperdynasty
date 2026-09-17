@@ -10,7 +10,7 @@ import requests
 from .config import KeeperEspnConfig
 
 
-ESPN_BASE = "https://fantasy.espn.com/apis/v3/games/ffl"
+ESPN_BASE = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl"
 
 
 @dataclass
