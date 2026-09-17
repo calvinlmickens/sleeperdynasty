@@ -7,7 +7,17 @@
       "proTeamId": 5,
       "defaultPositionId": 3,
       "injuryStatus": "ACTIVE",
-      "ownership": {"percentOwned": 44.2, "percentStarted": 8.1}
+      "ownership": {
+        "percentOwned": 44.2,
+        "percentStarted": 8.1
+      },
+      "stats": [
+        {
+          "scoringPeriodId": 2,
+          "statSourceId": 1,
+          "appliedTotal": 12.6
+        }
+      ]
     }
   },
   {
@@ -18,7 +28,17 @@
       "proTeamId": 6,
       "defaultPositionId": 2,
       "injuryStatus": "QUESTIONABLE",
-      "ownership": {"percentOwned": 31.4, "percentStarted": 5.0}
+      "ownership": {
+        "percentOwned": 31.4,
+        "percentStarted": 5
+      },
+      "stats": [
+        {
+          "scoringPeriodId": 2,
+          "statSourceId": 1,
+          "appliedTotal": 10.4
+        }
+      ]
     }
   }
 ]

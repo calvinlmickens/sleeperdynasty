@@ -17,21 +17,52 @@
         "23": 1
       }
     },
-    "scheduleSettings": {"matchupPeriodCount": 14},
-    "acquisitionSettings": {"waiverProcessHour": 4},
+    "scheduleSettings": {
+      "matchupPeriodCount": 14
+    },
+    "acquisitionSettings": {
+      "waiverProcessHour": 4
+    },
     "scoringSettings": {
       "scoringItems": [
-        {"statId": 4, "points": 6.0}
+        {
+          "statId": 4,
+          "points": 6
+        }
       ]
     }
   },
   "draftDetail": {
     "drafted": true,
     "picks": [
-      {"playerId": 101, "teamId": 1, "roundId": 5, "roundPickNumber": 1, "overallPickNumber": 49},
-      {"playerId": 102, "teamId": 1, "roundId": 2, "roundPickNumber": 1, "overallPickNumber": 13},
-      {"playerId": 103, "teamId": 1, "roundId": 8, "roundPickNumber": 1, "overallPickNumber": 85},
-      {"playerId": 201, "teamId": 2, "roundId": 6, "roundPickNumber": 2, "overallPickNumber": 62}
+      {
+        "playerId": 101,
+        "teamId": 1,
+        "roundId": 5,
+        "roundPickNumber": 1,
+        "overallPickNumber": 49
+      },
+      {
+        "playerId": 102,
+        "teamId": 1,
+        "roundId": 2,
+        "roundPickNumber": 1,
+        "overallPickNumber": 13
+      },
+      {
+        "playerId": 103,
+        "teamId": 1,
+        "roundId": 8,
+        "roundPickNumber": 1,
+        "overallPickNumber": 85
+      },
+      {
+        "playerId": 201,
+        "teamId": 2,
+        "roundId": 6,
+        "roundPickNumber": 2,
+        "overallPickNumber": 62
+      }
     ]
   },
   "teams": [
@@ -41,13 +72,113 @@
       "nickname": "Made",
       "waiverRank": 5,
       "playoffSeed": 3,
-      "record": {"overall": {"wins": 1, "losses": 0, "ties": 0, "pointsFor": 145.5, "pointsAgainst": 121.2}},
+      "record": {
+        "overall": {
+          "wins": 1,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": 145.5,
+          "pointsAgainst": 121.2
+        }
+      },
       "roster": {
         "entries": [
-          {"lineupSlotId": 0, "playerPoolEntry": {"player": {"id": 101, "fullName": "Test Quarterback", "proTeamId": 1, "defaultPositionId": 1, "injuryStatus": "ACTIVE"}}},
-          {"lineupSlotId": 2, "playerPoolEntry": {"player": {"id": 102, "fullName": "Test Runner", "proTeamId": 2, "defaultPositionId": 2, "injuryStatus": "ACTIVE"}}},
-          {"lineupSlotId": 4, "playerPoolEntry": {"player": {"id": 103, "fullName": "Test Receiver", "proTeamId": 3, "defaultPositionId": 3, "injuryStatus": "QUESTIONABLE"}}},
-          {"lineupSlotId": 20, "playerPoolEntry": {"player": {"id": 104, "fullName": "Bench Runner", "proTeamId": 4, "defaultPositionId": 2, "injuryStatus": "ACTIVE"}}}
+          {
+            "lineupSlotId": 0,
+            "playerPoolEntry": {
+              "player": {
+                "id": 101,
+                "fullName": "Test Quarterback",
+                "proTeamId": 1,
+                "defaultPositionId": 1,
+                "injuryStatus": "ACTIVE",
+                "stats": [
+                  {
+                    "scoringPeriodId": 2,
+                    "statSourceId": 1,
+                    "appliedTotal": 24.5
+                  },
+                  {
+                    "scoringPeriodId": 2,
+                    "statSourceId": 0,
+                    "appliedTotal": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "lineupSlotId": 2,
+            "playerPoolEntry": {
+              "player": {
+                "id": 102,
+                "fullName": "Test Runner",
+                "proTeamId": 2,
+                "defaultPositionId": 2,
+                "injuryStatus": "ACTIVE",
+                "stats": [
+                  {
+                    "scoringPeriodId": 2,
+                    "statSourceId": 1,
+                    "appliedTotal": 18.2
+                  },
+                  {
+                    "scoringPeriodId": 2,
+                    "statSourceId": 0,
+                    "appliedTotal": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "lineupSlotId": 4,
+            "playerPoolEntry": {
+              "player": {
+                "id": 103,
+                "fullName": "Test Receiver",
+                "proTeamId": 3,
+                "defaultPositionId": 3,
+                "injuryStatus": "QUESTIONABLE",
+                "stats": [
+                  {
+                    "scoringPeriodId": 2,
+                    "statSourceId": 1,
+                    "appliedTotal": 15.7
+                  },
+                  {
+                    "scoringPeriodId": 2,
+                    "statSourceId": 0,
+                    "appliedTotal": 0
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "lineupSlotId": 20,
+            "playerPoolEntry": {
+              "player": {
+                "id": 104,
+                "fullName": "Bench Runner",
+                "proTeamId": 4,
+                "defaultPositionId": 2,
+                "injuryStatus": "ACTIVE",
+                "stats": [
+                  {
+                    "scoringPeriodId": 2,
+                    "statSourceId": 1,
+                    "appliedTotal": 9.4
+                  },
+                  {
+                    "scoringPeriodId": 2,
+                    "statSourceId": 0,
+                    "appliedTotal": 0
+                  }
+                ]
+              }
+            }
+          }
         ]
       }
     },
@@ -57,15 +188,110 @@
       "nickname": "Opponent",
       "waiverRank": 8,
       "playoffSeed": 7,
-      "record": {"overall": {"wins": 0, "losses": 1, "ties": 0, "pointsFor": 118.0, "pointsAgainst": 139.0}},
-      "roster": {"entries": []}
+      "record": {
+        "overall": {
+          "wins": 0,
+          "losses": 1,
+          "ties": 0,
+          "pointsFor": 118,
+          "pointsAgainst": 139
+        }
+      },
+      "roster": {
+        "entries": [
+          {
+            "lineupSlotId": 0,
+            "playerPoolEntry": {
+              "player": {
+                "id": 2010,
+                "fullName": "Opponent Quarterback",
+                "proTeamId": 8,
+                "defaultPositionId": 1,
+                "injuryStatus": "ACTIVE",
+                "stats": [
+                  {
+                    "scoringPeriodId": 2,
+                    "statSourceId": 1,
+                    "appliedTotal": 27.3
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "lineupSlotId": 2,
+            "playerPoolEntry": {
+              "player": {
+                "id": 2011,
+                "fullName": "Opponent Runner",
+                "proTeamId": 9,
+                "defaultPositionId": 2,
+                "injuryStatus": "ACTIVE",
+                "stats": [
+                  {
+                    "scoringPeriodId": 2,
+                    "statSourceId": 1,
+                    "appliedTotal": 19.8
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "lineupSlotId": 4,
+            "playerPoolEntry": {
+              "player": {
+                "id": 2012,
+                "fullName": "Opponent Receiver",
+                "proTeamId": 10,
+                "defaultPositionId": 3,
+                "injuryStatus": "QUESTIONABLE",
+                "stats": [
+                  {
+                    "scoringPeriodId": 2,
+                    "statSourceId": 1,
+                    "appliedTotal": 16.1
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "lineupSlotId": 20,
+            "playerPoolEntry": {
+              "player": {
+                "id": 2013,
+                "fullName": "Opponent Bench",
+                "proTeamId": 11,
+                "defaultPositionId": 3,
+                "injuryStatus": "ACTIVE",
+                "stats": [
+                  {
+                    "scoringPeriodId": 2,
+                    "statSourceId": 1,
+                    "appliedTotal": 8.2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
     }
   ],
   "schedule": [
     {
       "matchupPeriodId": 2,
-      "home": {"teamId": 1, "totalPoints": 0.0, "totalProjectedPoints": 132.5},
-      "away": {"teamId": 2, "totalPoints": 0.0, "totalProjectedPoints": 127.0}
+      "home": {
+        "teamId": 1,
+        "totalPoints": 0,
+        "totalProjectedPoints": 132.5
+      },
+      "away": {
+        "teamId": 2,
+        "totalPoints": 0,
+        "totalProjectedPoints": 127
+      }
     }
   ]
 }

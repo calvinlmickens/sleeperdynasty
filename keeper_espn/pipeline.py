@@ -81,7 +81,29 @@ def _roster_status(slot_id: Any) -> str:
     return "STARTER"
 
 
-def _player_from_entry(entry: dict[str, Any]) -> dict[str, Any]:
+def _weekly_stat_total(
+    player: dict[str, Any],
+    *,
+    week: int,
+    stat_source_id: int,
+) -> float | None:
+    for stat in player.get("stats") or []:
+        try:
+            scoring_period = int(stat.get("scoringPeriodId"))
+            source_id = int(stat.get("statSourceId"))
+        except (TypeError, ValueError):
+            continue
+        if scoring_period != int(week) or source_id != int(stat_source_id):
+            continue
+        value = stat.get("appliedTotal")
+        if value is None:
+            value = stat.get("appliedStatTotal")
+        if value is not None:
+            return float(value)
+    return None
+
+
+def _player_from_entry(entry: dict[str, Any], *, week: int) -> dict[str, Any]:
     pool = entry.get("playerPoolEntry") or {}
     player = pool.get("player") or {}
     player_id = player.get("id") or pool.get("id")
@@ -98,6 +120,16 @@ def _player_from_entry(entry: dict[str, Any]) -> dict[str, Any]:
         "bye_week": None,
         "keeper_round": None,
         "keeper_origin": "UNKNOWN",
+        "weekly_projection": _weekly_stat_total(
+            player,
+            week=week,
+            stat_source_id=1,
+        ),
+        "weekly_actual": _weekly_stat_total(
+            player,
+            week=week,
+            stat_source_id=0,
+        ),
     }
 
 
@@ -177,7 +209,7 @@ def build_league_state(pull: EspnPull, config: KeeperEspnConfig) -> dict[str, An
 def build_roster_state(pull: EspnPull, config: KeeperEspnConfig, *, week: int) -> dict[str, Any]:
     team = _find_team(pull.league, config.team_id)
     entries = ((team.get("roster") or {}).get("entries") or [])
-    players = [_player_from_entry(entry) for entry in entries]
+    players = [_player_from_entry(entry, week=week) for entry in entries]
     statuses = [p["roster_status"] for p in players]
     expected_total = sum(_extract_lineup_counts(pull.league).values())
     return {
@@ -218,6 +250,11 @@ def _score(side: dict[str, Any] | None, key: str) -> float | None:
     return float(value) if value is not None else None
 
 
+def _team_roster_snapshot(team: dict[str, Any], *, week: int) -> list[dict[str, Any]]:
+    entries = ((team.get("roster") or {}).get("entries") or [])
+    return [_player_from_entry(entry, week=week) for entry in entries]
+
+
 def build_matchup_state(pull: EspnPull, config: KeeperEspnConfig, *, week: int) -> dict[str, Any]:
     matchup = _find_matchup(pull.league, week=week, team_id=config.team_id)
     home = matchup.get("home") or {}
@@ -229,6 +266,7 @@ def build_matchup_state(pull: EspnPull, config: KeeperEspnConfig, *, week: int) 
     if opp_id is None:
         raise RuntimeError("Opponent team ID missing from ESPN matchup")
     opponent = _find_team(pull.league, opp_id)
+    opponent_roster = _team_roster_snapshot(opponent, week=week)
 
     current_score = _score(ours, "totalPoints")
     opponent_score = _score(opp, "totalPoints")
@@ -269,6 +307,18 @@ def build_matchup_state(pull: EspnPull, config: KeeperEspnConfig, *, week: int) 
         "players_remaining_us": None,
         "players_remaining_opponent": None,
         "remaining_players": [],
+        "opponent_roster": opponent_roster,
+        "opponent_starter_projection_total": sum(
+            float(player["weekly_projection"])
+            for player in opponent_roster
+            if player.get("roster_status") == "STARTER"
+            and player.get("weekly_projection") is not None
+        ),
+        "opponent_projection_player_count": sum(
+            1
+            for player in opponent_roster
+            if player.get("weekly_projection") is not None
+        ),
     }
 
 
