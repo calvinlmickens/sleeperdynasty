@@ -521,6 +521,59 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
         self.assertNotIn("Pool Player 25", names)
 
 
+    def test_public_analyst_rss_is_targeted_and_deduped(self) -> None:
+        from keeper_espn.public_analyst_intel import parse_rotowire_rss
+
+        xml = """<?xml version="1.0"?>
+        <rss><channel>
+          <item>
+            <title>Test Receiver earns larger role</title>
+            <link>https://example.com/test-receiver</link>
+            <guid>test-receiver-1</guid>
+            <pubDate>Thu, 17 Sep 2026 22:00:00 GMT</pubDate>
+            <description>Test Receiver saw first-team work and a larger target share.</description>
+          </item>
+          <item>
+            <title>Other Player update</title>
+            <link>https://example.com/other</link>
+            <guid>other-1</guid>
+            <pubDate>Thu, 17 Sep 2026 22:00:00 GMT</pubDate>
+            <description>Other Player is healthy.</description>
+          </item>
+        </channel></rss>
+        """
+        targets = [
+            {
+                "player_id": "103",
+                "player_name": "Test Receiver",
+                "position": "WR",
+                "scope": "ROSTER",
+            }
+        ]
+
+        items, seen_ids = parse_rotowire_rss(
+            xml,
+            target_players=targets,
+            observed_at="2026-09-17T19:00:00-04:00",
+            previous_seen_ids=[],
+        )
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["player_name"], "Test Receiver")
+        self.assertEqual(items[0]["source_tier"], "TIER_3")
+        self.assertEqual(items[0]["review_bucket"], "CHALLENGE")
+        self.assertEqual(items[0]["category"], "ROLE")
+        self.assertEqual(len(seen_ids), 1)
+
+        repeated, seen_again = parse_rotowire_rss(
+            xml,
+            target_players=targets,
+            observed_at="2026-09-17T19:05:00-04:00",
+            previous_seen_ids=seen_ids,
+        )
+        self.assertEqual(repeated, [])
+        self.assertEqual(seen_again, seen_ids)
+
+
     def test_official_depth_chart_is_change_driven(self) -> None:
         from keeper_espn.depth_chart_intel import (
             build_depth_chart_change_items,
