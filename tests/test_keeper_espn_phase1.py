@@ -7,7 +7,7 @@ import shutil
 from tempfile import TemporaryDirectory
 import unittest
 
-from keeper_espn.pipeline_phase4 import run_refresh
+from keeper_espn.pipeline_phase5 import run_refresh
 
 
 class KeeperEspnPhase3Tests(unittest.TestCase):
@@ -36,6 +36,7 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
                     "player_pool.json",
                     "delta_state.json",
                     "advisor_packet.json",
+                    "league_results.json",
                 ):
                     self.assertTrue((latest / name).exists(), name)
                     self.assertTrue((lkg / name).exists(), name)
@@ -197,6 +198,173 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
                 self.assertTrue(failed["last_known_good_preserved"])
                 preserved_lkg_run_id = json.loads((lkg / "manifest.json").read_text())["run_id"]
                 self.assertEqual(preserved_lkg_run_id, second["run_id"])
+        finally:
+            os.environ.clear()
+            os.environ.update(old)
+
+
+    def test_finalized_prior_week_builds_full_league_recap(self) -> None:
+        old = dict(os.environ)
+        try:
+            os.environ["ESPN_LEAGUE_ID"] = "424242"
+            os.environ["ESPN_TEAM_ID"] = "1"
+            os.environ["ESPN_SEASON"] = "2026"
+            base_fixture = Path(__file__).parent / "keeper_fixtures"
+
+            with TemporaryDirectory() as tmp:
+                fixture_dir = Path(tmp) / "final_fixture"
+                shutil.copytree(base_fixture, fixture_dir)
+
+                league_path = fixture_dir / "league.json"
+                league = json.loads(league_path.read_text())
+                league["schedule"].insert(
+                    0,
+                    {
+                        "id": 10,
+                        "matchupPeriodId": 1,
+                        "winner": "HOME",
+                        "home": {
+                            "teamId": 1,
+                            "totalPoints": 145.5,
+                            "totalProjectedPoints": 131.0,
+                        },
+                        "away": {
+                            "teamId": 2,
+                            "totalPoints": 121.2,
+                            "totalProjectedPoints": 128.0,
+                        },
+                    },
+                )
+                league_path.write_text(json.dumps(league, indent=2) + "\n")
+
+                boxscore = {
+                    "schedule": [
+                        {
+                            "id": 10,
+                            "matchupPeriodId": 1,
+                            "winner": "HOME",
+                            "home": {
+                                "teamId": 1,
+                                "totalPoints": 145.5,
+                                "rosterForCurrentScoringPeriod": {
+                                    "entries": [
+                                        {
+                                            "lineupSlotId": 0,
+                                            "playerPoolEntry": {
+                                                "appliedStatTotal": 30.0,
+                                                "player": {
+                                                    "id": 101,
+                                                    "fullName": "Test Quarterback",
+                                                    "defaultPositionId": 1,
+                                                },
+                                            },
+                                        },
+                                        {
+                                            "lineupSlotId": 2,
+                                            "playerPoolEntry": {
+                                                "appliedStatTotal": 25.0,
+                                                "player": {
+                                                    "id": 102,
+                                                    "fullName": "Test Runner",
+                                                    "defaultPositionId": 2,
+                                                },
+                                            },
+                                        },
+                                        {
+                                            "lineupSlotId": 4,
+                                            "playerPoolEntry": {
+                                                "appliedStatTotal": 20.0,
+                                                "player": {
+                                                    "id": 103,
+                                                    "fullName": "Test Receiver",
+                                                    "defaultPositionId": 3,
+                                                },
+                                            },
+                                        },
+                                        {
+                                            "lineupSlotId": 20,
+                                            "playerPoolEntry": {
+                                                "appliedStatTotal": 18.5,
+                                                "player": {
+                                                    "id": 104,
+                                                    "fullName": "Bench Runner",
+                                                    "defaultPositionId": 2,
+                                                },
+                                            },
+                                        },
+                                    ]
+                                },
+                            },
+                            "away": {
+                                "teamId": 2,
+                                "totalPoints": 121.2,
+                                "rosterForCurrentScoringPeriod": {
+                                    "entries": [
+                                        {
+                                            "lineupSlotId": 0,
+                                            "playerPoolEntry": {
+                                                "appliedStatTotal": 24.0,
+                                                "player": {
+                                                    "id": 2010,
+                                                    "fullName": "Opponent Quarterback",
+                                                    "defaultPositionId": 1,
+                                                },
+                                            },
+                                        },
+                                        {
+                                            "lineupSlotId": 20,
+                                            "playerPoolEntry": {
+                                                "appliedStatTotal": 9.0,
+                                                "player": {
+                                                    "id": 2011,
+                                                    "fullName": "Opponent Bench",
+                                                    "defaultPositionId": 3,
+                                                },
+                                            },
+                                        },
+                                    ]
+                                },
+                            },
+                        }
+                    ]
+                }
+                (fixture_dir / "boxscore.json").write_text(json.dumps(boxscore, indent=2) + "\n")
+
+                root = Path(tmp) / "output"
+                result = run_refresh(output_dir=root, fixture_dir=fixture_dir)
+                self.assertEqual(result["status"], "PASS")
+                self.assertEqual(result["week"], 2)
+                self.assertEqual(result["results_week"], 1)
+                self.assertEqual(result["results_status"], "FINAL_RESULTS")
+
+                league_results = json.loads((root / "latest" / "league_results.json").read_text())
+                advisor = json.loads((root / "latest" / "advisor_packet.json").read_text())
+
+                self.assertEqual(league_results["week"], 1)
+                self.assertEqual(league_results["results_status"], "FINAL_RESULTS")
+                self.assertEqual(league_results["matchup_count"], 1)
+                self.assertEqual(league_results["league_high_score"]["team_name"], "Taylor Made")
+                self.assertEqual(league_results["league_high_score"]["score"], 145.5)
+                self.assertEqual(league_results["closest_game"]["margin"], 24.3)
+                self.assertEqual(
+                    league_results["taylor_made_result"]["highest_bench_player"]["player_name"],
+                    "Bench Runner",
+                )
+                self.assertEqual(
+                    league_results["taylor_made_result"]["highest_bench_player"]["actual_points"],
+                    18.5,
+                )
+                self.assertEqual(advisor["weekly_result"]["week"], 1)
+                self.assertEqual(advisor["weekly_result"]["outcome"], "WIN")
+                self.assertEqual(advisor["league_recap_summary"]["week"], 1)
+                self.assertEqual(
+                    advisor["league_recap_summary"]["team_with_most_bench_points"]["team_name"],
+                    "Taylor Made",
+                )
+                self.assertNotIn(
+                    "Per-player actual points are not yet normalized for final-week recap use.",
+                    advisor["run_state"]["known_gaps"],
+                )
         finally:
             os.environ.clear()
             os.environ.update(old)
