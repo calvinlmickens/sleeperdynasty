@@ -10,6 +10,7 @@ on:
       - 'pyproject.toml'
       - '.github/workflows/keeper-espn-ci.yml'
       - '.github/workflows/keeper-espn-healthcheck.yml'
+      - '.github/workflows/keeper-espn-refresh.yml'
 
 jobs:
   keeper-fixture-test:
