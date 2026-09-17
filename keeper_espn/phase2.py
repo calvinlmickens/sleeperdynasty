@@ -63,7 +63,11 @@ def build_keeper_state(roster_state: dict[str, Any], pull: EspnPull) -> dict[str
     }
 
 
-def _extract_pool_player(entry: dict[str, Any]) -> dict[str, Any] | None:
+def _extract_pool_player(
+    entry: dict[str, Any],
+    *,
+    draft_rounds: dict[str, int],
+) -> dict[str, Any] | None:
     player = entry.get("player") or (entry.get("playerPoolEntry") or {}).get("player") or {}
     if not player and entry.get("fullName"):
         player = entry
@@ -74,8 +78,10 @@ def _extract_pool_player(entry: dict[str, Any]) -> dict[str, Any] | None:
     position_id = player.get("defaultPositionId")
     ownership = player.get("ownership") or {}
     status = entry.get("status") or (entry.get("playerPoolEntry") or {}).get("status") or "AVAILABLE"
+    player_id_str = str(player_id)
+    drafted_round = draft_rounds.get(player_id_str)
     return {
-        "player_id": str(player_id),
+        "player_id": player_id_str,
         "player_name": player.get("fullName") or player.get("name") or "Unknown Player",
         "position": POSITION_NAMES.get(position_id, str(position_id) if position_id is not None else "UNKNOWN"),
         "nfl_team_id": player.get("proTeamId"),
@@ -83,16 +89,17 @@ def _extract_pool_player(entry: dict[str, Any]) -> dict[str, Any] | None:
         "availability_status": status,
         "percent_owned": ownership.get("percentOwned"),
         "percent_started": ownership.get("percentStarted"),
-        "keeper_round_if_added": 17,
-        "keeper_origin_if_added": "UNDRAFTED_FA",
+        "keeper_round_if_added": drafted_round if drafted_round is not None else 17,
+        "keeper_origin_if_added": "DRAFTED" if drafted_round is not None else "UNDRAFTED_FA",
     }
 
 
 def build_player_pool_state(pull: EspnPull, *, week: int) -> dict[str, Any]:
     players = []
+    draft_rounds = _draft_round_map(pull.league)
     seen: set[str] = set()
     for entry in pull.available_players:
-        normalized = _extract_pool_player(entry)
+        normalized = _extract_pool_player(entry, draft_rounds=draft_rounds)
         if not normalized:
             continue
         player_id = normalized["player_id"]
