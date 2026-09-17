@@ -19,6 +19,28 @@ class EspnPull:
     source: str
     available_players: list[dict[str, Any]]
     player_pool_source: str | None = None
+    boxscore: dict[str, Any] | None = None
+    boxscore_source: str | None = None
+    results_week: int | None = None
+
+
+def _latest_finalized_week(league: dict[str, Any]) -> int | None:
+    current_week = int(league.get("scoringPeriodId") or 0)
+    by_week: dict[int, list[dict[str, Any]]] = {}
+    for matchup in league.get("schedule") or []:
+        try:
+            week = int(matchup.get("matchupPeriodId"))
+        except (TypeError, ValueError):
+            continue
+        if week > current_week:
+            continue
+        by_week.setdefault(week, []).append(matchup)
+
+    finalized: list[int] = []
+    for week, matchups in by_week.items():
+        if matchups and all(m.get("winner") in {"HOME", "AWAY", "TIE"} for m in matchups):
+            finalized.append(week)
+    return max(finalized) if finalized else None
 
 
 class EspnFantasyClient:
@@ -26,7 +48,7 @@ class EspnFantasyClient:
         self.config = config
         self.timeout = timeout
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "keeper-league-advisor/0.2"})
+        self.session.headers.update({"User-Agent": "keeper-league-advisor/0.3"})
         if config.swid and config.espn_s2:
             self.session.cookies.set("SWID", config.swid)
             self.session.cookies.set("espn_s2", config.espn_s2)
@@ -89,11 +111,30 @@ class EspnFantasyClient:
         if not isinstance(available_players, list):
             raise RuntimeError("ESPN player-pool response did not contain a players list")
 
+        results_week = _latest_finalized_week(league)
+        boxscore: dict[str, Any] | None = None
+        boxscore_source: str | None = None
+        if results_week is not None:
+            box_response = self.session.get(
+                self.league_url,
+                params=[
+                    ("view", "mBoxscore"),
+                    ("matchupPeriodId", str(results_week)),
+                    ("scoringPeriodId", str(results_week)),
+                ],
+                timeout=self.timeout,
+            )
+            boxscore = self._json_object(box_response, label="boxscore")
+            boxscore_source = box_response.url
+
         return EspnPull(
             league=league,
             source=response.url,
             available_players=available_players,
             player_pool_source=pool_response.url,
+            boxscore=boxscore,
+            boxscore_source=boxscore_source,
+            results_week=results_week,
         )
 
 
@@ -114,9 +155,21 @@ def load_fixture(fixture_dir: str | Path) -> EspnPull:
             raise RuntimeError("ESPN fixture player_pool.json must contain a JSON array")
         available_players = pool_data
 
+    results_week = _latest_finalized_week(data)
+    boxscore_path = fixture_dir / "boxscore.json"
+    boxscore: dict[str, Any] | None = None
+    if boxscore_path.exists():
+        boxscore_data = json.loads(boxscore_path.read_text(encoding="utf-8"))
+        if not isinstance(boxscore_data, dict):
+            raise RuntimeError("ESPN fixture boxscore.json must contain a JSON object")
+        boxscore = boxscore_data
+
     return EspnPull(
         league=data,
         source=str(path),
         available_players=available_players,
         player_pool_source=str(pool_path) if pool_path.exists() else None,
+        boxscore=boxscore,
+        boxscore_source=str(boxscore_path) if boxscore_path.exists() else None,
+        results_week=results_week,
     )

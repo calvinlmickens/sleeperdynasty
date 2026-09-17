@@ -59,7 +59,18 @@ jobs:
           import json
           from pathlib import Path
           packet = json.loads(Path("keeper_live_test/latest/advisor_packet.json").read_text())
+          results = json.loads(Path("keeper_live_test/latest/league_results.json").read_text())
           print(json.dumps({
+              "league_results": {
+                  "week": results.get("week"),
+                  "current_espn_week": results.get("current_espn_week"),
+                  "results_status": results.get("results_status"),
+                  "league_high_score": results.get("league_high_score"),
+                  "league_low_score": results.get("league_low_score"),
+                  "closest_game": results.get("closest_game"),
+                  "largest_margin_game": results.get("largest_margin_game"),
+                  "completeness": results.get("completeness"),
+              },
               "run_state": packet.get("run_state"),
               "team_state": packet.get("team_state"),
               "matchup": packet.get("matchup"),
