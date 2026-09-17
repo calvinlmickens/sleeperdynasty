@@ -32,6 +32,7 @@ class KeeperEspnPhase2Tests(unittest.TestCase):
                     self.assertTrue((latest / name).exists(), name)
 
                 manifest = json.loads((latest / "manifest.json").read_text())
+                league = json.loads((latest / "league_state.json").read_text())
                 roster = json.loads((latest / "roster_state.json").read_text())
                 matchup = json.loads((latest / "matchup_state.json").read_text())
                 keeper = json.loads((latest / "keeper_state.json").read_text())
@@ -39,8 +40,12 @@ class KeeperEspnPhase2Tests(unittest.TestCase):
 
                 self.assertEqual(manifest["validation_status"], "PASS")
                 self.assertEqual(manifest["nfl_week"], 2)
+                self.assertEqual(league["platform_ir_slots"], 2)
+                self.assertEqual(league["league_allowed_ir_slots"], 2)
+                self.assertEqual(league["ir_slots"], 2)
                 self.assertEqual(roster["team_name"], "Taylor Made")
                 self.assertEqual(roster["roster_count"], 4)
+                self.assertEqual(roster["league_allowed_ir_slots"], 2)
                 self.assertEqual(roster["players"][3]["roster_status"], "BENCH")
                 self.assertEqual(roster["players"][0]["keeper_round"], 5)
                 self.assertEqual(roster["players"][0]["keeper_origin"], "DRAFTED")
