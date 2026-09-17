@@ -522,7 +522,11 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
 
 
     def test_pff_team_rss_discovery_and_dedupe(self) -> None:
-        from keeper_espn.pff_intel import discover_team_feeds, parse_pff_team_rss
+        from keeper_espn.pff_intel import (
+            discover_team_feeds,
+            emit_after_baseline,
+            parse_pff_team_rss,
+        )
 
         directory_html = """
         <html><body>
@@ -576,6 +580,14 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
             source_url="https://www.pff.com/feed/teams/26",
         )
         self.assertEqual(len(items), 1)
+        self.assertEqual(
+            emit_after_baseline(items, previous_initialized=False),
+            [],
+        )
+        self.assertEqual(
+            emit_after_baseline(items, previous_initialized=True),
+            items,
+        )
         self.assertEqual(items[0]["player_name"], "Test Receiver")
         self.assertEqual(items[0]["source_tier"], "TIER_3")
         self.assertEqual(items[0]["review_bucket"], "CHALLENGE")
