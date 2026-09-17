@@ -42,9 +42,13 @@ def apply_league_ir_rule(*, league_state: dict, roster_state: dict) -> None:
     effective_total_capacity = non_ir_capacity + LEAGUE_ALLOWED_IR_SLOTS
     roster_state["platform_ir_slots"] = platform_ir_slots
     roster_state["league_allowed_ir_slots"] = LEAGUE_ALLOWED_IR_SLOTS
+    roster_state["effective_open_ir_slots"] = max(
+        0, LEAGUE_ALLOWED_IR_SLOTS - int(roster_state.get("ir_count") or 0)
+    )
     roster_state["open_roster_slots"] = max(
         0, effective_total_capacity - int(roster_state.get("roster_count") or 0)
     )
+    league_state["effective_open_ir_slots"] = roster_state["effective_open_ir_slots"]
 
 
 def validate_phase2(*, keeper_state: dict, player_pool_state: dict, roster_state: dict) -> list[str]:
