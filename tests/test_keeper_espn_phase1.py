@@ -242,7 +242,7 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
                         {
                             "id": 10,
                             "matchupPeriodId": 1,
-                            "winner": "HOME",
+                            "winner": null,
                             "home": {
                                 "teamId": 1,
                                 "totalPoints": 145.5,
