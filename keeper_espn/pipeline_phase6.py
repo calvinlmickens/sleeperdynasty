@@ -103,6 +103,10 @@ def run_refresh(
             raw_intelligence, intelligence_input_source = load_intelligence_input(intelligence_file)
             collector_status = "CURRENT"
             collector_sources = ["MANUAL_INTELLIGENCE_INPUT"]
+        elif fixture_dir is not None:
+            raw_intelligence = []
+            intelligence_input_source = None
+            collector_status = "MISSING"
         else:
             target_names = [
                 p.get("player_name")
