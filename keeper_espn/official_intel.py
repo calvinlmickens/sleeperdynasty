@@ -146,7 +146,7 @@ def parse_transactions_html(
             continue
 
         transaction = cells[-1]
-        date_text = cells[-3] if len(cells) >= 4 else ""
+        date_text = next((cell for cell in cells if re.fullmatch(r"\d{1,2}/\d{1,2}", cell)), "")
         dedupe = (canonical, date_text, transaction)
         if dedupe in seen:
             continue
