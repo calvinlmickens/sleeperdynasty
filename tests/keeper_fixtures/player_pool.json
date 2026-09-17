@@ -1,0 +1,24 @@
+[
+  {
+    "status": "FREEAGENT",
+    "player": {
+      "id": 201,
+      "fullName": "Available Receiver",
+      "proTeamId": 5,
+      "defaultPositionId": 3,
+      "injuryStatus": "ACTIVE",
+      "ownership": {"percentOwned": 44.2, "percentStarted": 8.1}
+    }
+  },
+  {
+    "status": "WAIVERS",
+    "player": {
+      "id": 202,
+      "fullName": "Available Runner",
+      "proTeamId": 6,
+      "defaultPositionId": 2,
+      "injuryStatus": "QUESTIONABLE",
+      "ownership": {"percentOwned": 31.4, "percentStarted": 5.0}
+    }
+  }
+]

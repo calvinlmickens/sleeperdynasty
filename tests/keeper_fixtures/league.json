@@ -25,6 +25,14 @@
       ]
     }
   },
+  "draftDetail": {
+    "drafted": true,
+    "picks": [
+      {"playerId": 101, "teamId": 1, "roundId": 5, "roundPickNumber": 1, "overallPickNumber": 49},
+      {"playerId": 102, "teamId": 1, "roundId": 2, "roundPickNumber": 1, "overallPickNumber": 13},
+      {"playerId": 103, "teamId": 1, "roundId": 8, "roundPickNumber": 1, "overallPickNumber": 85}
+    ]
+  },
   "teams": [
     {
       "id": 1,
