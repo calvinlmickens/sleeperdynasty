@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from .pipeline import run_refresh
+from .pipeline_phase2 import run_refresh
 
 
 def main() -> None:
