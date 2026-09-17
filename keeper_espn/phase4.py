@@ -275,6 +275,7 @@ def build_advisor_packet(
             "ir_usage": {
                 "used": roster_state.get("ir_count"),
                 "league_allowed": roster_state.get("league_allowed_ir_slots"),
+                "effective_open": roster_state.get("effective_open_ir_slots"),
                 "platform_slots": roster_state.get("platform_ir_slots"),
             },
         },
