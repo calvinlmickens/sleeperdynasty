@@ -3,6 +3,10 @@ name: Keeper ESPN Health Check
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   healthcheck:
     runs-on: ubuntu-latest
@@ -25,16 +29,35 @@ jobs:
       - name: Install package
         run: python -m pip install -e .
 
+      - name: Restore prior validated Keeper state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prior_run_id="$(gh run list \
+            --workflow keeper-espn-healthcheck.yml \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId' || true)"
+          if [ -n "$prior_run_id" ]; then
+            mkdir -p keeper_live_test/last_known_good
+            gh run download "$prior_run_id" \
+              --name keeper-live-state \
+              --dir keeper_live_test/last_known_good || true
+          fi
+
       - name: Run live Keeper refresh
         run: keeper-refresh --output-dir keeper_live_test
 
-      - name: Show validation result
+      - name: Show validation and delta result
         run: |
           cat keeper_live_test/latest/manifest.json
+          echo
+          cat keeper_live_test/latest/delta_state.json
 
       - name: Upload live Keeper state
         uses: actions/upload-artifact@v4
         with:
           name: keeper-live-state
           path: keeper_live_test/latest/
-          retention-days: 3
+          retention-days: 14
