@@ -48,9 +48,21 @@ class EspnFantasyClient:
         ]
         response = self.session.get(self.league_url, params=params, timeout=self.timeout)
         response.raise_for_status()
-        data = response.json()
+        content_type = response.headers.get("Content-Type", "")
+        try:
+            data = response.json()
+        except requests.exceptions.JSONDecodeError as exc:
+            raise RuntimeError(
+                "ESPN response was not JSON "
+                f"(status={response.status_code}, content_type={content_type!r}, "
+                f"final_url={response.url!r})"
+            ) from exc
         if not isinstance(data, dict):
-            raise RuntimeError("ESPN league response was not a JSON object")
+            raise RuntimeError(
+                "ESPN league response was not a JSON object "
+                f"(status={response.status_code}, content_type={content_type!r}, "
+                f"final_url={response.url!r})"
+            )
         return EspnPull(league=data, source=response.url)
 
 
