@@ -19,8 +19,35 @@ from .pipeline import (
     validate_phase1,
 )
 
+LEAGUE_ALLOWED_IR_SLOTS = 2
 
-def validate_phase2(*, keeper_state: dict, player_pool_state: dict) -> list[str]:
+
+def apply_league_ir_rule(*, league_state: dict, roster_state: dict) -> None:
+    """Preserve ESPN platform capacity while enforcing the league's two-IR rule."""
+    platform_ir_slots = int(league_state.get("ir_slots") or 0)
+    league_state["platform_ir_slots"] = platform_ir_slots
+    league_state["league_allowed_ir_slots"] = LEAGUE_ALLOWED_IR_SLOTS
+    league_state["ir_slots"] = LEAGUE_ALLOWED_IR_SLOTS
+
+    non_ir_capacity = (
+        int(league_state.get("starting_qb") or 0)
+        + int(league_state.get("starting_rb") or 0)
+        + int(league_state.get("starting_wr") or 0)
+        + int(league_state.get("starting_te") or 0)
+        + int(league_state.get("starting_flex") or 0)
+        + int(league_state.get("starting_dst") or 0)
+        + int(league_state.get("starting_k") or 0)
+        + int(league_state.get("bench_slots") or 0)
+    )
+    effective_total_capacity = non_ir_capacity + LEAGUE_ALLOWED_IR_SLOTS
+    roster_state["platform_ir_slots"] = platform_ir_slots
+    roster_state["league_allowed_ir_slots"] = LEAGUE_ALLOWED_IR_SLOTS
+    roster_state["open_roster_slots"] = max(
+        0, effective_total_capacity - int(roster_state.get("roster_count") or 0)
+    )
+
+
+def validate_phase2(*, keeper_state: dict, player_pool_state: dict, roster_state: dict) -> list[str]:
     errors: list[str] = []
     keeper_players = keeper_state.get("players") or []
     if not keeper_players:
@@ -30,6 +57,8 @@ def validate_phase2(*, keeper_state: dict, player_pool_state: dict) -> list[str]
             errors.append(f"Keeper round missing for {player.get('player_name')}")
     if not isinstance(player_pool_state.get("players"), list):
         errors.append("Player pool is not a list")
+    if int(roster_state.get("ir_count") or 0) > LEAGUE_ALLOWED_IR_SLOTS:
+        errors.append("Taylor Made exceeds league-allowed two-player IR limit")
     return errors
 
 
@@ -51,6 +80,7 @@ def run_refresh(
         league_state = build_league_state(pull, config)
         week = int(league_state["current_week"])
         roster_state = build_roster_state(pull, config, week=week)
+        apply_league_ir_rule(league_state=league_state, roster_state=roster_state)
         roster_state = enrich_roster_keeper_fields(roster_state, pull)
         matchup_state = build_matchup_state(pull, config, week=week)
         keeper_state = build_keeper_state(roster_state, pull)
@@ -62,7 +92,13 @@ def run_refresh(
             roster_state=roster_state,
             matchup_state=matchup_state,
         )
-        errors.extend(validate_phase2(keeper_state=keeper_state, player_pool_state=player_pool_state))
+        errors.extend(
+            validate_phase2(
+                keeper_state=keeper_state,
+                player_pool_state=player_pool_state,
+                roster_state=roster_state,
+            )
+        )
         status = "PASS" if not errors else "FAIL"
 
         manifest = {
