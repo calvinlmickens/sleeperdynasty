@@ -480,6 +480,48 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
             os.environ.update(old)
 
 
+    def test_official_nfl_public_collector_parsers(self) -> None:
+        from keeper_espn.official_intel import parse_injury_html, parse_transactions_html
+
+        injury_html = """
+        <table>
+          <tr><th>Player</th><th>Position</th><th>Injuries</th><th>Practice Status</th><th>Game Status</th></tr>
+          <tr><td>Test Receiver</td><td>WR</td><td>Hamstring</td><td>Limited Participation in Practice</td><td>Questionable</td></tr>
+          <tr><td>Unrelated Player</td><td>RB</td><td>Knee</td><td>Did Not Participate In Practice</td><td>Out</td></tr>
+        </table>
+        """
+        injury_items = parse_injury_html(
+            injury_html,
+            target_names=["Test Receiver", "Available Runner"],
+            observed_at="2026-09-17T18:00:00-04:00",
+        )
+        self.assertEqual(len(injury_items), 1)
+        self.assertEqual(injury_items[0]["player_name"], "Test Receiver")
+        self.assertEqual(injury_items[0]["source_tier"], "TIER_1")
+        self.assertEqual(injury_items[0]["review_bucket"], "MATERIAL_CHANGE")
+        self.assertEqual(injury_items[0]["category"], "INJURY")
+
+        transaction_html = """
+        <table>
+          <tr><th>From</th><th>To</th><th>Date</th><th>Name</th><th>Position</th><th>Transaction</th></tr>
+          <tr><td>Team A</td><td>Team B</td><td>09/17</td><td>Available Runner</td><td>RB</td><td>Traded</td></tr>
+          <tr><td>Team C</td><td></td><td>09/17</td><td>Other Player</td><td>WR</td><td>Waived</td></tr>
+        </table>
+        """
+        txn_items = parse_transactions_html(
+            transaction_html,
+            target_names=["Test Receiver", "Available Runner"],
+            observed_at="2026-09-17T18:00:00-04:00",
+            source_url="https://www.nfl.com/transactions/league/trades/2026/9",
+            category="trades",
+        )
+        self.assertEqual(len(txn_items), 1)
+        self.assertEqual(txn_items[0]["player_name"], "Available Runner")
+        self.assertEqual(txn_items[0]["review_bucket"], "MATERIAL_CHANGE")
+        self.assertIn("09/17", txn_items[0]["detail"])
+        self.assertIn("Traded", txn_items[0]["headline"])
+
+
     def test_ir_players_do_not_create_injury_monitor_noise(self) -> None:
         from keeper_espn.phase4 import _decision_queue
 

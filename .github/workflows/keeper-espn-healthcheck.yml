@@ -66,6 +66,8 @@ jobs:
                   "source_status": intelligence.get("source_status"),
                   "item_count": intelligence.get("item_count"),
                   "source_names": intelligence.get("source_names"),
+                  "collector_sources": intelligence.get("collector_sources"),
+                  "collector_errors": intelligence.get("collector_errors"),
                   "matched_roster_count": intelligence.get("matched_roster_count"),
                   "matched_player_pool_count": intelligence.get("matched_player_pool_count"),
                   "unmatched_count": intelligence.get("unmatched_count"),

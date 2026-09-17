@@ -17,6 +17,7 @@ from .phase6 import (
     load_intelligence_input,
     validate_intelligence_state,
 )
+from .official_intel import collect_official_nfl_intelligence
 from .pipeline import (
     ET,
     SCHEMA_VERSION,
@@ -94,7 +95,42 @@ def run_refresh(
         )
         errors.extend(validate_phase5(league_results))
 
-        raw_intelligence, intelligence_input_source = load_intelligence_input(intelligence_file)
+        collector_status = None
+        collector_errors: list[str] = []
+        collector_sources: list[str] = []
+
+        if intelligence_file is not None:
+            raw_intelligence, intelligence_input_source = load_intelligence_input(intelligence_file)
+            collector_status = "CURRENT"
+            collector_sources = ["MANUAL_INTELLIGENCE_INPUT"]
+        elif fixture_dir is not None:
+            raw_intelligence = []
+            intelligence_input_source = None
+            collector_status = "MISSING"
+        else:
+            target_names = [
+                p.get("player_name")
+                for p in (roster_state.get("players") or [])
+                if p.get("player_name")
+            ]
+            target_names.extend(
+                p.get("player_name")
+                for p in (player_pool_state.get("players") or [])
+                if p.get("player_name")
+            )
+            generated_dt = datetime.fromisoformat(pulled_at)
+            official = collect_official_nfl_intelligence(
+                target_names=target_names,
+                observed_at=pulled_at,
+                year=config.season,
+                month=generated_dt.month,
+            )
+            raw_intelligence = official.items
+            intelligence_input_source = "PUBLIC_OFFICIAL_NFL"
+            collector_status = official.status
+            collector_errors = official.errors
+            collector_sources = official.source_names
+
         intelligence_state = build_intelligence_state(
             raw_items=raw_intelligence,
             input_source=intelligence_input_source,
@@ -103,6 +139,9 @@ def run_refresh(
             roster_state=roster_state,
             player_pool_state=player_pool_state,
         )
+        intelligence_state["source_status"] = collector_status or intelligence_state.get("source_status")
+        intelligence_state["collector_sources"] = collector_sources
+        intelligence_state["collector_errors"] = collector_errors
         errors.extend(validate_intelligence_state(intelligence_state))
 
         manifest = {
@@ -126,6 +165,8 @@ def run_refresh(
                 "boxscore_source": pull.boxscore_source,
                 "external_intelligence": intelligence_state.get("source_status"),
                 "external_intelligence_input": intelligence_input_source,
+                "external_intelligence_sources": intelligence_state.get("collector_sources"),
+                "external_intelligence_errors": intelligence_state.get("collector_errors"),
             },
             "outputs": [
                 "league_state.json",
