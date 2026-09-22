@@ -38,21 +38,35 @@ def reconcile_snapshot(
     add("player_id_resolution", unresolved.empty, f"unresolved={len(unresolved)}")
 
     roster_size_failures = []
+    underfilled_rosters = []
     starter_failures = []
     starter_membership_failures = []
     for r in rosters:
         rid = int(r["roster_id"])
         players = {str(x) for x in (r.get("players") or []) if x is not None}
         starters = [str(x) for x in (r.get("starters") or []) if x is not None and str(x) != "0"]
-        if len(players) != config.expected_roster_size:
+        # Sleeper permits a manager to carry fewer players than the configured
+        # roster capacity. An empty bench spot is informational, not an
+        # integrity failure; only an oversized roster should block the refresh.
+        if len(players) > config.expected_roster_size:
             roster_size_failures.append((rid, len(players)))
+        elif len(players) < config.expected_roster_size:
+            underfilled_rosters.append((rid, len(players)))
         if len(starters) > config.expected_starters:
             starter_failures.append((rid, len(starters)))
         missing = [p for p in starters if p not in players]
         if missing:
             starter_membership_failures.append((rid, missing))
 
-    add("roster_size", not roster_size_failures, f"exceptions={roster_size_failures}")
+    add(
+        "roster_size",
+        not roster_size_failures,
+        (
+            f"oversized={roster_size_failures}; "
+            f"underfilled_nonfatal={underfilled_rosters}; "
+            f"maximum={config.expected_roster_size}"
+        ),
+    )
     add("starter_count_upper_bound", not starter_failures, f"exceptions={starter_failures}")
     add("starters_owned_by_roster", not starter_membership_failures, f"exceptions={starter_membership_failures}")
 
