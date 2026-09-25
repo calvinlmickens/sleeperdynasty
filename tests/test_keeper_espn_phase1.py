@@ -8,9 +8,31 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from keeper_espn.pipeline_phase6 import run_refresh
+from keeper_espn.league_rosters import build_league_rosters, league_roster_delta, validate_league_rosters
+from keeper_espn.client import load_fixture
 
 
 class KeeperEspnPhase3Tests(unittest.TestCase):
+    def test_league_ownership_transfer_and_incomplete_snapshot(self) -> None:
+        fixture = Path(__file__).parent / "keeper_fixtures"
+        baseline = build_league_rosters(load_fixture(fixture), week=1)
+        current = json.loads(json.dumps(baseline))
+        player = current["teams"][0]["players"].pop()
+        current["teams"][0]["roster_count"] -= 1
+        current["teams"][1]["players"].append(player)
+        current["teams"][1]["roster_count"] += 1
+        delta = league_roster_delta(current, baseline)
+        self.assertEqual(delta["change_count"], 1)
+        self.assertEqual(delta["changes"][0]["from_team_id"], 1)
+        self.assertEqual(delta["changes"][0]["to_team_id"], 2)
+        self.assertEqual(league_roster_delta(baseline, None)["change_count"], 0)
+        invalid = json.loads(json.dumps(baseline))
+        invalid["teams"][1]["players"] = []
+        self.assertTrue(validate_league_rosters(
+            invalid, {"number_of_teams": 2},
+            {"team_id": 1, "players": baseline["teams"][0]["players"]},
+        ))
+
     def test_fixture_refresh_tracks_delta_and_preserves_lkg(self) -> None:
         old = dict(os.environ)
         try:
@@ -31,6 +53,7 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
                     "manifest.json",
                     "league_state.json",
                     "roster_state.json",
+                    "league_rosters.json",
                     "matchup_state.json",
                     "keeper_state.json",
                     "player_pool.json",
@@ -47,6 +70,10 @@ class KeeperEspnPhase3Tests(unittest.TestCase):
                 advisor = json.loads((latest / "advisor_packet.json").read_text())
                 league = json.loads((latest / "league_state.json").read_text())
                 roster = json.loads((latest / "roster_state.json").read_text())
+                league_rosters = json.loads((latest / "league_rosters.json").read_text())
+                self.assertEqual(league_rosters["team_count"], 2)
+                self.assertEqual([t["roster_count"] for t in league_rosters["teams"]], [4, 4])
+                self.assertEqual(advisor["league_roster_context"]["snapshot_file"], "league_rosters.json")
                 keeper = json.loads((latest / "keeper_state.json").read_text())
                 pool = json.loads((latest / "player_pool.json").read_text())
 
