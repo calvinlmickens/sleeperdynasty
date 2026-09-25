@@ -23,6 +23,7 @@ PERSISTENT_FILES = [
     "manifest.json",
     "league_state.json",
     "roster_state.json",
+    "league_rosters.json",
     "matchup_state.json",
     "keeper_state.json",
     "player_pool.json",

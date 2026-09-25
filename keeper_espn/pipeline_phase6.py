@@ -9,6 +9,7 @@ from .client import EspnFantasyClient, load_fixture
 from .config import KeeperEspnConfig
 from .phase2 import build_keeper_state, build_player_pool_state, enrich_roster_keeper_fields
 from .phase3 import build_delta_state, load_validated_snapshot
+from .league_rosters import build_league_rosters, league_roster_delta, validate_league_rosters
 from .phase4 import build_advisor_packet
 from .phase5 import apply_results_to_advisor_packet, build_league_results
 from .phase6 import (
@@ -63,6 +64,7 @@ def run_refresh(
         roster_state = build_roster_state(pull, config, week=week)
         apply_league_ir_rule(league_state=league_state, roster_state=roster_state)
         roster_state = enrich_roster_keeper_fields(roster_state, pull)
+        league_rosters = build_league_rosters(pull, week=week)
         matchup_state = build_matchup_state(pull, config, week=week)
         keeper_state = build_keeper_state(roster_state, pull)
         player_pool_state = build_player_pool_state(pull, week=week)
@@ -73,6 +75,7 @@ def run_refresh(
             roster_state=roster_state,
             matchup_state=matchup_state,
         )
+        errors.extend(validate_league_rosters(league_rosters, league_state, roster_state))
         errors.extend(
             validate_phase2(
                 keeper_state=keeper_state,
@@ -92,6 +95,12 @@ def run_refresh(
             player_pool_state=player_pool_state,
             previous=previous,
         )
+        league_roster_changes = league_roster_delta(
+            league_rosters, previous.get("league_rosters") if previous else None
+        )
+        delta_state["league_rosters"] = league_roster_changes
+        delta_state["summary"]["league_roster_ownership_changes"] = league_roster_changes["change_count"]
+        delta_state["material_change"] = delta_state["material_change"] or bool(league_roster_changes["change_count"])
 
         league_results = build_league_results(
             pull,
@@ -262,6 +271,7 @@ def run_refresh(
             "outputs": [
                 "league_state.json",
                 "roster_state.json",
+                "league_rosters.json",
                 "matchup_state.json",
                 "keeper_state.json",
                 "player_pool.json",
@@ -283,6 +293,12 @@ def run_refresh(
             player_pool_state=player_pool_state,
             delta_state=delta_state,
         )
+        advisor_packet["league_roster_context"] = {
+            "snapshot_file": "league_rosters.json",
+            "team_count": league_rosters["team_count"],
+            "ownership_changes": league_roster_changes["changes"],
+            "note": "Use full roster snapshot for trade and league market review; owner needs require Advisor judgment.",
+        }
         advisor_packet = apply_intelligence_to_advisor_packet(
             advisor_packet,
             intelligence_state=intelligence_state,
@@ -302,6 +318,7 @@ def run_refresh(
         _write_json(run_dir / "manifest.json", manifest)
         _write_json(run_dir / "league_state.json", league_state)
         _write_json(run_dir / "roster_state.json", roster_state)
+        _write_json(run_dir / "league_rosters.json", league_rosters)
         _write_json(run_dir / "matchup_state.json", matchup_state)
         _write_json(run_dir / "keeper_state.json", keeper_state)
         _write_json(run_dir / "player_pool.json", player_pool_state)

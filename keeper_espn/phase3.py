@@ -39,6 +39,9 @@ def load_validated_snapshot(snapshot_dir: str | Path) -> dict[str, dict[str, Any
         "keeper_state": _read_json(snapshot_dir / "keeper_state.json"),
         "player_pool": _read_json(snapshot_dir / "player_pool.json"),
     }
+    league_rosters_path = snapshot_dir / "league_rosters.json"
+    if league_rosters_path.exists():
+        result["league_rosters"] = _read_json(league_rosters_path)
     intelligence_path = snapshot_dir / "intelligence_state.json"
     if intelligence_path.exists():
         result["intelligence_state"] = _read_json(intelligence_path)
