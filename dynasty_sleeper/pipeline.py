@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 
 import hashlib
@@ -17,6 +17,7 @@ from .normalize import normalize_league_state, normalize_transactions
 from .reconcile import reconcile_snapshot, critical_failures, reconcile_roster_delta
 from .matchup import load_enrichment, build_weekly_matchup_context, build_weekly_matchup_summary, write_framework_packet
 from .enrichment import build_auto_player_week_context
+from .waiver import build_waiver_watch
 
 
 EXPECTED_LIVE_SCOREBOARD_TEAMS = 10
@@ -576,6 +577,37 @@ def run_refresh(
         enrichment_status = "AUTO_LOADED" if enrichment_meta.get("status") == "LOADED" else str(enrichment_meta.get("status"))
     enrichment.to_csv(player_week_context_path, index=False)
 
+    waiver_watch_path = output_dir / "waiver_watch_v2.csv"
+    waiver_summary_path = output_dir / "waiver_watch_summary_v2.csv"
+    waiver_projection_source = "Sleeper weekly projections endpoint (api.sleeper.com)"
+    waiver_projection_payload = projection_payload
+    if enrichment_file and not enrichment.empty:
+        waiver_projection_source = "validated weekly enrichment input"
+        # Reuse the already validated weekly enrichment input when supplied; do
+        # not silently discard its current projection rows in waiver ranking.
+        waiver_projection_payload = [
+            {
+                "player_id": str(row.get("sleeper_player_id")),
+                "projected_points": row.get("projected_points"),
+                "source_name": row.get("source_name"),
+                "source_timestamp_utc": row.get("source_timestamp_utc"),
+            }
+            for row in enrichment.to_dict(orient="records")
+        ]
+    waiver_watch, waiver_summary, waiver_meta = build_waiver_watch(
+        league=league,
+        week=week,
+        league_id=config.league_id,
+        rosters=rosters,
+        players=players,
+        projection_payload=waiver_projection_payload,
+        target_roster_id=target_roster_id,
+        pulled_at=pulled_at,
+        projection_source=waiver_projection_source,
+    )
+    waiver_watch.to_csv(waiver_watch_path, index=False)
+    waiver_summary.to_csv(waiver_summary_path, index=False)
+
 
     live_scoreboard, live_player_scores, live_scoreboard_validation = _build_live_week_outputs(
         league=league,
@@ -619,6 +651,7 @@ def run_refresh(
         and not delta_failures
         and matchup_meta.get("status") == "PASS"
         and live_scoreboard_validation["status"] == "PASS"
+        and waiver_meta["status"] == "PASS"
         else "FAIL"
     )
     manifest = {
@@ -657,6 +690,14 @@ def run_refresh(
         "projection_fetch_status": projection_fetch_status,
         "projection_fetch_error": projection_fetch_error,
         "projection_enrichment_meta": enrichment_meta,
+        "waiver_watch": {
+            **waiver_meta,
+            "outputs_generated": {
+                "waiver_pool": waiver_meta.get("waiver_pool_generated", False),
+                "waiver_watch_v2.csv": waiver_watch_path.exists(),
+                "waiver_watch_summary_v2.csv": waiver_summary_path.exists(),
+            },
+        },
         "framework_ready": bool(matchup_summary.iloc[0].get("framework_ready", False)) if not matchup_summary.empty else False,
         "framework_gate": matchup_summary.iloc[0].get("framework_gate") if not matchup_summary.empty else "HOLD_MATCHUP_DERIVATION_FAILED",
         "live_scoreboard_status": live_scoreboard_validation["status"],
@@ -666,7 +707,7 @@ def run_refresh(
     }
 
 
-    manifest_files = [state_path, summary_path, tx_current_path, tx_master_path, report_path, picks_path, delta_path, player_week_context_path, matchup_context_path, matchup_summary_path, framework_packet_path, live_scoreboard_path, live_player_scores_path]
+    manifest_files = [state_path, summary_path, tx_current_path, tx_master_path, report_path, picks_path, delta_path, player_week_context_path, matchup_context_path, matchup_summary_path, framework_packet_path, live_scoreboard_path, live_player_scores_path, waiver_watch_path, waiver_summary_path]
     if final_snapshot_path is not None:
         manifest_files.append(final_snapshot_path)
     for p in manifest_files:
@@ -689,9 +730,12 @@ def run_refresh(
         "player_week_context": player_week_context_path,
         "league_live_scoreboard": live_scoreboard_path,
         "league_live_player_scores": live_player_scores_path,
+        "waiver_watch": waiver_watch_path,
+        "waiver_watch_summary": waiver_summary_path,
         "final_week_snapshot": final_snapshot_path,
         "target_roster_id": target_roster_id,
         "critical_failures": failures
         + (["UNRECONCILED_ROSTER_DELTA"] if delta_failures else [])
-        + (["LIVE_SCOREBOARD_VALIDATION_FAILED"] if live_scoreboard_validation["status"] != "PASS" else []),
+        + (["LIVE_SCOREBOARD_VALIDATION_FAILED"] if live_scoreboard_validation["status"] != "PASS" else [])
+        + (["WAIVER_WATCH_VALIDATION_FAILED"] if waiver_meta["status"] != "PASS" else []),
     }

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 
 import argparse
@@ -32,6 +32,8 @@ PERSISTENT_FILES = [
     "player_week_context.csv",
     "league_live_scoreboard.csv",
     "league_live_player_scores.csv",
+    "waiver_watch_v2.csv",
+    "waiver_watch_summary_v2.csv",
 ]
 DOWNLOAD_FILES = PERSISTENT_FILES
 
@@ -232,6 +234,12 @@ def upload_latest(source: str | Path, filenames: Iterable[str] = PERSISTENT_FILE
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if manifest.get("overall_status") != "PASS":
         raise RuntimeError("manifest overall_status is not PASS; refusing to overwrite last known-good baseline")
+    waiver = manifest.get("waiver_watch") or {}
+    if waiver.get("status") != "PASS":
+        raise RuntimeError("waiver_watch status is not PASS; refusing to upload incomplete waiver artifacts")
+    for waiver_file in ("waiver_watch_v2.csv", "waiver_watch_summary_v2.csv"):
+        if not (source / waiver_file).exists():
+            raise RuntimeError(f"Required waiver-watch output missing: {waiver_file}")
 
 
     uploaded: list[dict] = []

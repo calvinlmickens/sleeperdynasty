@@ -15,6 +15,7 @@
 - [x] Directional league-scoring projection calculation
 - [x] Projection endpoint failure degrades without corrupting league-state truth
 - [x] `player_week_context.csv` persisted to Drive
+- [x] Sleeper-only current waiver/free-agent pool, ranked waiver watch, and summary persisted to Drive
 
 ## Next
 - [ ] Live external intelligence sweep integration / attestation
@@ -23,7 +24,7 @@
 - [ ] Role/depth-chart/usage-change intelligence attachment
 - [ ] Ecosystem Confidence update attachment
 - [ ] Opponent Registry material-change classifier
-- [ ] Compact waiver-watch engine
+- [x] Compact waiver-watch engine
 - [ ] Transaction intelligence summary in framework packet
 - [ ] Production schedule / alert policy
 - [ ] Parallel final validation then retire stale ESPN current-state files

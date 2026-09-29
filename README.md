@@ -38,6 +38,8 @@ This preserves Volume 3 governance: league state and projections may be automate
 - `reconciliation_report.csv`
 - `roster_delta_reconciliation.csv`
 - `player_week_context.csv`
+- `waiver_watch_v2.csv` — current Sleeper player universe minus current league roster ownership, ranked for RuffRyders Reloaded.
+- `waiver_watch_summary_v2.csv` — candidate counts by priority add, speculative stash, streamer, and realistic drop candidates.
 - `weekly_matchup_context.csv`
 - `weekly_matchup_summary.csv`
 - `framework_matchup_packet.md`
@@ -51,3 +53,12 @@ Manual fixture run:
 ```bash
 python -m dynasty_sleeper.cli --week 1 --fixture-dir tests/fixtures --output-dir output
 ```
+
+Every normal refresh (scheduled or manually dispatched) builds both waiver-watch
+CSVs from the selected Sleeper league's current rosters and `/players/nfl`
+universe. The current Sleeper weekly projection endpoint is joined when available;
+unavailable projections remain blank and are flagged. Both files are uploaded to
+the Google Drive `latest/` folder with the normal refresh outputs. The manifest
+records the league/week, pool and output status, generation time, candidate and
+projection counts, and any validation errors. Week 3 ESPN waiver files are not
+inputs to this pipeline.
