@@ -109,6 +109,29 @@ jobs:
           echo "finalize=$FINALIZE" >> "$GITHUB_OUTPUT"
 
 
+      - name: Recover archived Week 6 pregame context
+        if: ${{ steps.run_context.outputs.finalize == 'true' && steps.run_context.outputs.week == '6' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          mkdir -p archived-context
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/12192832835/zip" \
+            --output archived-context/week6.zip
+          unzip -p archived-context/week6.zip weekly_matchup_context.csv > archived-context/week6_pregame_context.csv
+          python - <<'PY'
+          import pandas as pd
+          path = "archived-context/week6_pregame_context.csv"
+          df = pd.read_csv(path)
+          assert set(df["week"].dropna().astype(int)) == {6}, "Archived context is not Week 6"
+          assert {10, 5}.issubset(set(df["roster_id"].astype(int))), "Missing original Week 6 matchup rosters"
+          print("Verified original Week 6 pregame context from archived successful run.")
+          PY
+
+
       - name: Run live Sleeper refresh with drift reconciliation
         shell: bash
         run: |
@@ -131,7 +154,7 @@ jobs:
           if [[ "${{ steps.run_context.outputs.finalize }}" == "true" ]]; then
             FINALIZE_ARGS=(
               --finalize-week
-              --pregame-context baseline/weekly_matchup_context.csv
+              --pregame-context "$PREGAME_CONTEXT"
             )
           fi
 
@@ -168,4 +191,4 @@ jobs:
           name: sleeper-refresh-week-${{ steps.run_context.outputs.week }}
           path: output/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
