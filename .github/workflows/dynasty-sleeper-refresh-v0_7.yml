@@ -152,6 +152,10 @@ jobs:
 
           FINALIZE_ARGS=()
           if [[ "${{ steps.run_context.outputs.finalize }}" == "true" ]]; then
+            PREGAME_CONTEXT="baseline/weekly_matchup_context.csv"
+            if [[ "${{ steps.run_context.outputs.week }}" == "6" ]]; then
+              PREGAME_CONTEXT="archived-context/week6_pregame_context.csv"
+            fi
             FINALIZE_ARGS=(
               --finalize-week
               --pregame-context "$PREGAME_CONTEXT"
@@ -175,6 +179,7 @@ jobs:
 
 
       - name: Persist validated baseline to Google Drive
+        if: ${{ steps.run_context.outputs.finalize != 'true' }}
         env:
           GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
           GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
