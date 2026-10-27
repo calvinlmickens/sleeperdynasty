@@ -189,6 +189,17 @@ jobs:
           python -m dynasty_sleeper.drive_sync upload --source output
 
 
+      - name: Publish permanent final snapshot to Google Drive
+        if: ${{ steps.run_context.outputs.finalize == 'true' }}
+        env:
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        run: |
+          python -m dynasty_sleeper.drive_sync upload-final --source output
+
+
       - name: Upload diagnostic artifact
         if: always()
         uses: actions/upload-artifact@v4
