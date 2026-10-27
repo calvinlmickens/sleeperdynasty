@@ -282,6 +282,30 @@ def upload_latest(source: str | Path, filenames: Iterable[str] = PERSISTENT_FILE
 
 
 
+
+def upload_final_snapshot(source: str | Path) -> dict:
+    """Publish validated final JSON without modifying the live latest baseline."""
+    source = Path(source)
+    manifest_path = source / "manifest.json"
+    if not manifest_path.is_file():
+        raise RuntimeError("manifest.json missing")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("overall_status") != "PASS" or manifest.get("final_snapshot_status") != "PASS":
+        raise RuntimeError("Final snapshot validation did not PASS")
+    week = int(manifest["week"])
+    local = source / f"week_{week}_final_snapshot.json"
+    if not local.is_file():
+        raise RuntimeError(f"Missing final snapshot: {local.name}")
+    json.loads(local.read_text(encoding="utf-8"))
+    token, root_id = _access_token()
+    _verify_root(token, root_id)
+    folder = _ensure_folder(token, root_id, FINAL_SNAPSHOT_FOLDER_NAME)
+    existing = _find_child(token, folder["id"], local.name)
+    result = _update_existing(token, existing["id"], local) if existing else _upload_new(token, folder["id"], local)
+    return {"status": "PASS", "folder_id": folder["id"], "file_id": result.get("id"),
+            "filename": local.name, "mode": "updated" if existing else "created"}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Google Drive persistence helper for Dynasty Sleeper automation")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -289,11 +313,18 @@ def main() -> None:
     d.add_argument("--dest", default="baseline")
     u = sub.add_parser("upload", help="Upload validated baseline to Drive")
     u.add_argument("--source", default="output")
+    f = sub.add_parser("upload-final", help="Publish validated final snapshot only")
+    f.add_argument("--source", default="output")
     args = parser.parse_args()
 
 
     try:
-        result = download_latest(args.dest) if args.command == "download" else upload_latest(args.source)
+        if args.command == "download":
+            result = download_latest(args.dest)
+        elif args.command == "upload-final":
+            result = upload_final_snapshot(args.source)
+        else:
+            result = upload_latest(args.source)
         print(json.dumps(result, indent=2))
     except Exception as exc:
         print(json.dumps({"status": "FAIL", "error": str(exc)}, indent=2))
