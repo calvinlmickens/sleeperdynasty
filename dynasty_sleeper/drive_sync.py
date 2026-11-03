@@ -284,26 +284,43 @@ def upload_latest(source: str | Path, filenames: Iterable[str] = PERSISTENT_FILE
 
 
 def upload_final_snapshot(source: str | Path) -> dict:
-    """Publish validated final JSON without modifying the live latest baseline."""
+    """Publish both validated final archives; never touch the Week 9 latest folder."""
     source = Path(source)
     manifest_path = source / "manifest.json"
     if not manifest_path.is_file():
         raise RuntimeError("manifest.json missing")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("overall_status") != "PASS" or manifest.get("final_snapshot_status") != "PASS":
-        raise RuntimeError("Final snapshot validation did not PASS")
+    if (manifest.get("overall_status") != "PASS"
+            or manifest.get("final_snapshot_status") != "PASS"
+            or manifest.get("league_final_snapshot_status") != "PASS"):
+        raise RuntimeError("All-team finalization validation did not PASS")
     week = int(manifest["week"])
-    local = source / f"week_{week}_final_snapshot.json"
-    if not local.is_file():
-        raise RuntimeError(f"Missing final snapshot: {local.name}")
-    json.loads(local.read_text(encoding="utf-8"))
+    paths = [
+        source / f"week_{week}_final_snapshot.json",
+        source / f"week_{week}_league_final_snapshot.json",
+    ]
+    documents = []
+    for local in paths:
+        if not local.is_file():
+            raise RuntimeError(f"Missing final snapshot: {local.name}")
+        documents.append(json.loads(local.read_text(encoding="utf-8")))
+    league_final = documents[1]
+    if (league_final.get("status") != "PASS"
+            or league_final.get("week") != week
+            or league_final.get("team_count") != 10
+            or league_final.get("matchup_count") != 5
+            or len(league_final.get("matchups", [])) != 5):
+        raise RuntimeError("Incomplete or invalid league-wide final snapshot")
     token, root_id = _access_token()
     _verify_root(token, root_id)
     folder = _ensure_folder(token, root_id, FINAL_SNAPSHOT_FOLDER_NAME)
-    existing = _find_child(token, folder["id"], local.name)
-    result = _update_existing(token, existing["id"], local) if existing else _upload_new(token, folder["id"], local)
-    return {"status": "PASS", "folder_id": folder["id"], "file_id": result.get("id"),
-            "filename": local.name, "mode": "updated" if existing else "created"}
+    uploaded = []
+    for local in paths:
+        existing = _find_child(token, folder["id"], local.name)
+        result = _update_existing(token, existing["id"], local) if existing else _upload_new(token, folder["id"], local)
+        uploaded.append({"filename": local.name, "file_id": result.get("id"),
+                         "mode": "updated" if existing else "created"})
+    return {"status": "PASS", "folder_id": folder["id"], "uploaded": uploaded}
 
 
 def main() -> None:
