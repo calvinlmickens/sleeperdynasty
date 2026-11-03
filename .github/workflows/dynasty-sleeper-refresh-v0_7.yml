@@ -76,28 +76,20 @@ jobs:
 
           if [[ -n "$MANUAL_WEEK" ]]; then
             WEEK="$MANUAL_WEEK"
-          elif [[ "$FINALIZE" == "true" && -f baseline/manifest.json ]]; then
-            WEEK="$(python - <<'PY'
-          import json
-          from pathlib import Path
-
-
-          manifest = json.loads(Path("baseline/manifest.json").read_text(encoding="utf-8"))
-          print(int(manifest["week"]))
-          PY
-          )"
           else
-            WEEK="$(python - <<'PY'
+            CURRENT_WEEK="$(python - <<'PY'
           import requests
-
-
           response = requests.get("https://api.sleeper.app/v1/state/nfl", timeout=30)
           response.raise_for_status()
           print(int(response.json()["week"]))
           PY
           )"
+            if [[ "$FINALIZE" == "true" ]]; then
+              WEEK="$((CURRENT_WEEK - 1))"
+            else
+              WEEK="$CURRENT_WEEK"
+            fi
           fi
-
 
           if ! [[ "$WEEK" =~ ^[0-9]+$ ]] || (( WEEK < 1 || WEEK > 18 )); then
             echo "Invalid resolved NFL week: $WEEK" >&2
@@ -109,28 +101,15 @@ jobs:
           echo "finalize=$FINALIZE" >> "$GITHUB_OUTPUT"
 
 
-      - name: Recover archived Week 6 pregame context
-        if: ${{ steps.run_context.outputs.finalize == 'true' && steps.run_context.outputs.week == '6' }}
+      - name: Resolve validated pregame context for requested final week
+        if: ${{ steps.run_context.outputs.finalize == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
-        shell: bash
         run: |
-          mkdir -p archived-context
-          curl --fail --silent --show-error --location \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/12192832835/zip" \
-            --output archived-context/week6.zip
-          unzip -p archived-context/week6.zip weekly_matchup_context.csv > archived-context/week6_pregame_context.csv
-          python - <<'PY'
-          import pandas as pd
-          path = "archived-context/week6_pregame_context.csv"
-          df = pd.read_csv(path)
-          assert set(df["week"].dropna().astype(int)) == {6}, "Archived context is not Week 6"
-          assert {10, 5}.issubset(set(df["roster_id"].astype(int))), "Missing original Week 6 matchup rosters"
-          print("Verified original Week 6 pregame context from archived successful run.")
-          PY
-
+          python -m dynasty_sleeper.pregame_recovery \
+            --week "${{ steps.run_context.outputs.week }}" \
+            --baseline baseline \
+            --output archived-context/pregame_context.csv
 
       - name: Run live Sleeper refresh with drift reconciliation
         shell: bash
@@ -152,10 +131,7 @@ jobs:
 
           FINALIZE_ARGS=()
           if [[ "${{ steps.run_context.outputs.finalize }}" == "true" ]]; then
-            PREGAME_CONTEXT="baseline/weekly_matchup_context.csv"
-            if [[ "${{ steps.run_context.outputs.week }}" == "6" ]]; then
-              PREGAME_CONTEXT="archived-context/week6_pregame_context.csv"
-            fi
+            PREGAME_CONTEXT="archived-context/pregame_context.csv"
             FINALIZE_ARGS=(
               --finalize-week
               --pregame-context "$PREGAME_CONTEXT"
