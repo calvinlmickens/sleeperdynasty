@@ -48,6 +48,9 @@ jobs:
           pip install requests pandas
 
 
+      - name: Test league-wide finalization
+        run: python -m unittest discover -s tests -p test_league_final.py -v
+
       - name: Download prior validated baseline from Google Drive
         env:
           GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
