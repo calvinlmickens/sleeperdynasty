@@ -33,9 +33,16 @@ def build_league_final(league, week, matchups, state, timestamp, team_count=10):
         score = round(float(m["points"]),2)
         if abs(sum(p["points"] for p in entries) - score) > 0.02:
             raise RuntimeError("Final team score does not match starters: " + str(rid))
+        bench = []
+        for (roster_id, pid), row in state_lookup.items():
+            if roster_id == rid and pid not in starters and pid != "0":
+                bench.append({"player_id": pid, "name": str(row["player_name"]),
+                              "position": str(row["position"]),
+                              "points": round(points[pid], 2) if pid in points else None})
+        bench.sort(key=lambda x: x["name"])
         team_rows = state[state["roster_id"] == rid]
         groups[mid].append({"roster_id": rid, "team_name": str(team_rows.iloc[0]["team_name"]),
-                            "score": score, "starters": entries})
+                            "score": score, "starters": entries, "bench": bench})
     if len(seen) != team_count or len(groups) != team_count//2 or any(len(v)!=2 for v in groups.values()):
         raise RuntimeError("Incomplete league pairings")
     final = []
