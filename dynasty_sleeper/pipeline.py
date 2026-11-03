@@ -18,6 +18,7 @@ from .reconcile import reconcile_snapshot, critical_failures, reconcile_roster_d
 from .matchup import load_enrichment, build_weekly_matchup_context, build_weekly_matchup_summary, write_framework_packet
 from .enrichment import build_auto_player_week_context
 from .waiver import build_waiver_watch
+from .league_final import build_league_final
 
 
 EXPECTED_LIVE_SCOREBOARD_TEAMS = 10
@@ -538,6 +539,7 @@ def run_refresh(
     live_scoreboard_path = output_dir / "league_live_scoreboard.csv"
     live_player_scores_path = output_dir / "league_live_player_scores.csv"
     final_snapshot_path = output_dir / f"week_{week}_final_snapshot.json" if finalize_week else None
+    league_final_path = output_dir / f"week_{week}_league_final_snapshot.json" if finalize_week else None
 
 
     state.to_csv(state_path, index=False)
@@ -643,6 +645,11 @@ def run_refresh(
             pregame_context_path=pregame_context,
         )
         _write_json(final_snapshot_path, final_snapshot)
+        league_final = build_league_final(
+            league, week, matchups, state, pulled_at,
+            team_count=config.expected_teams,
+        )
+        _write_json(league_final_path, league_final)
 
 
     overall_status = (
@@ -703,6 +710,7 @@ def run_refresh(
         "live_scoreboard_status": live_scoreboard_validation["status"],
         "live_scoreboard_validation_errors": live_scoreboard_validation["errors"],
         "final_snapshot_status": "PASS" if final_snapshot_path is not None else "NOT_REQUESTED",
+        "league_final_snapshot_status": "PASS" if league_final_path is not None else "NOT_REQUESTED",
         "files": {},
     }
 
@@ -710,6 +718,7 @@ def run_refresh(
     manifest_files = [state_path, summary_path, tx_current_path, tx_master_path, report_path, picks_path, delta_path, player_week_context_path, matchup_context_path, matchup_summary_path, framework_packet_path, live_scoreboard_path, live_player_scores_path, waiver_watch_path, waiver_summary_path]
     if final_snapshot_path is not None:
         manifest_files.append(final_snapshot_path)
+        manifest_files.append(league_final_path)
     for p in manifest_files:
         manifest["files"][p.name] = {"sha256": _sha256(p), "bytes": p.stat().st_size}
     _write_json(manifest_path, manifest)
@@ -733,6 +742,7 @@ def run_refresh(
         "waiver_watch": waiver_watch_path,
         "waiver_watch_summary": waiver_summary_path,
         "final_week_snapshot": final_snapshot_path,
+        "league_final_snapshot": league_final_path,
         "target_roster_id": target_roster_id,
         "critical_failures": failures
         + (["UNRECONCILED_ROSTER_DELTA"] if delta_failures else [])
